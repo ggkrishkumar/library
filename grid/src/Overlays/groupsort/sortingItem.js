@@ -9,6 +9,7 @@ const SortItem = ({
     id,
     sortOption,
     columns,
+    sortingOrders,
     moveSort,
     findSort,
     updateSingleSortingOption,
@@ -49,7 +50,7 @@ const SortItem = ({
             return column.accessor === columnAccessor;
         });
         if (origCol && origCol.innerCells) {
-            return origCol.innerCells;
+            return origCol.innerCells.filter((cell) => cell.isSortable);
         }
         return [];
     };
@@ -114,24 +115,32 @@ const SortItem = ({
             <div className="sort__reorder">
                 <div className="sort__file">
                     <select
+                        data-testid="groupSort-sortBy"
                         className="custom__ctrl"
                         onChange={changeSortByOptions}
                         value={sortOption.sortBy}
                     >
-                        {columns.map((orgItem) => (
-                            <option
-                                key={orgItem.columnId}
-                                value={orgItem.accessor}
-                            >
-                                {orgItem.Header}
-                            </option>
-                        ))}
+                        {columns.map((orgItem) => {
+                            if (orgItem.isSortable) {
+                                return (
+                                    <option
+                                        data-testid="groupSort-sortBy-Option"
+                                        key={orgItem.columnId}
+                                        value={orgItem.accessor}
+                                    >
+                                        {orgItem.Header}
+                                    </option>
+                                );
+                            }
+                            return null;
+                        })}
                     </select>
                 </div>
             </div>
             <div className="sort__reorder">
                 <div className="sort__file">
                     <select
+                        data-testid="groupSort-sortOn"
                         className="custom__ctrl"
                         onChange={changeSortOnOptions}
                         value={sortOption.sortOn}
@@ -141,6 +150,7 @@ const SortItem = ({
                             getInncerCellsOfColumn(sortOption.sortBy).map(
                                 (innerCellItem) => (
                                     <option
+                                        data-testid="groupSort-sortOn-Option"
                                         key={`${innerCellItem.Header}_${innerCellItem.accessor}`}
                                         value={innerCellItem.accessor}
                                     >
@@ -149,7 +159,11 @@ const SortItem = ({
                                 )
                             )
                         ) : (
-                            <option key={0} value="value">
+                            <option
+                                data-testid="groupSort-sortOn-Option"
+                                key={0}
+                                value="value"
+                            >
                                 Value
                             </option>
                         )}
@@ -159,12 +173,19 @@ const SortItem = ({
             <div className="sort__reorder">
                 <div className="sort__file">
                     <select
+                        data-testid="groupSort-order"
                         className="custom__ctrl"
                         value={sortOption.order}
                         onChange={changeSortOrderOptions}
                     >
-                        <option>Ascending</option>
-                        <option>Descending</option>
+                        {sortingOrders.map((order) => (
+                            <option
+                                data-testid="groupSort-order-Option"
+                                key={order}
+                            >
+                                {order}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -198,6 +219,7 @@ SortItem.propTypes = {
     id: PropTypes.number,
     sortOption: PropTypes.object,
     columns: PropTypes.arrayOf(PropTypes.object),
+    sortingOrders: PropTypes.array,
     moveSort: PropTypes.func,
     findSort: PropTypes.func,
     updateSingleSortingOption: PropTypes.func,

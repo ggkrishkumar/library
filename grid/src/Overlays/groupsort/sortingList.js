@@ -6,7 +6,7 @@ import { ItemTypes } from "./ItemTypes";
 import SortItem from "./sortingItem";
 
 const SortingList = (props) => {
-    const { updateSortingOptions, sortOptions, columns } = props;
+    const { updateSortingOptions, sortingOrders, sortOptions, columns } = props;
 
     const findSort = (sortId) => {
         const sort = sortOptions.filter((c, index) => index === sortId)[0];
@@ -46,6 +46,7 @@ const SortingList = (props) => {
                             id={index}
                             key={index}
                             sortOption={sortOption}
+                            sortingOrders={sortingOrders}
                             columns={columns}
                             moveSort={moveSort}
                             findSort={findSort}
@@ -64,6 +65,7 @@ const SortingList = (props) => {
 
 SortingList.propTypes = {
     updateSortingOptions: PropTypes.func,
+    sortingOrders: PropTypes.array,
     sortOptions: PropTypes.array,
     columns: PropTypes.arrayOf(PropTypes.object),
     copySortOption: PropTypes.func,

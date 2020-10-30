@@ -16,20 +16,27 @@ const GridComponent = (props) => {
         title,
         gridHeight,
         gridWidth,
+        rowsToOverscan,
         passColumnToExpand,
         passRowActions,
         passRowActionCallback,
+        passGetRowInfo,
         passOnGridRefresh,
         hasPagination,
         CustomPanel,
         enableGroupHeaders,
+        gridHeader,
+        rowSelector,
         globalSearch,
         columnFilter,
         groupSort,
         columnChooser,
         exportData,
-        enableRowDeselection,
-        expandableColumn
+        rowsForSelection,
+        passIdAttribute,
+        expandableColumn,
+        multiRowSelection,
+        theme
     } = props;
     const idAttribute = "travelId";
     const gridPageSize = 300;
@@ -54,6 +61,8 @@ const GridComponent = (props) => {
     const [userSelectedRows, setUserSelectedRows] = useState([]);
     // State for holding rows to deselect
     const [rowsToDeselect, setRowsToDeselect] = useState([]);
+    // State for holding rows to select
+    const [rowsToSelect, setRowsToSelect] = useState([]);
 
     const airportCodeList = [
         "AAA",
@@ -119,6 +128,7 @@ const GridComponent = (props) => {
             width: 50,
             disableFilters: true,
             isSearchable: true,
+            isSortable: true,
             displayCell: (
                 rowData,
                 DisplayTag,
@@ -138,10 +148,12 @@ const GridComponent = (props) => {
             Header: "Flight",
             accessor: "flight",
             width: 100,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Flight No",
                     accessor: "flightno",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
@@ -191,15 +203,18 @@ const GridComponent = (props) => {
             Header: "Segment",
             accessor: "segment",
             width: 100,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "From",
                     accessor: "from",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
                     Header: "To",
                     accessor: "to",
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -469,15 +484,18 @@ const GridComponent = (props) => {
             Header: "Weight",
             accessor: "weight",
             width: 130,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Percentage",
                     accessor: "percentage",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
                     Header: "Value",
                     accessor: "value",
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -516,6 +534,7 @@ const GridComponent = (props) => {
             Header: "Volume",
             accessor: "volume",
             width: 100,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Percentage",
@@ -652,6 +671,7 @@ const GridComponent = (props) => {
             Header: "SR",
             accessor: "sr",
             width: 90,
+            isSortable: true,
             isSearchable: true,
             displayCell: (
                 rowData,
@@ -724,13 +744,15 @@ const GridComponent = (props) => {
         }
     ];
 
-    const columns = originalColumns.map((column) => {
+    const mappedOriginalColumns = originalColumns.map((column) => {
         const updatedColumn = column;
         if (!enableGroupHeaders && column.groupHeader) {
             delete updatedColumn.groupHeader;
         }
         return updatedColumn;
     });
+
+    const [columns, setColumns] = useState(mappedOriginalColumns);
 
     const columnToExpand = {
         Header: "Remarks",
@@ -891,7 +913,7 @@ const GridComponent = (props) => {
     const onRowSelect = (selectedRows) => {
         console.log("Rows selected: ");
         console.log(selectedRows);
-        if (enableRowDeselection) {
+        if (passIdAttribute) {
             setUserSelectedRows(selectedRows);
         }
     };
@@ -953,18 +975,30 @@ const GridComponent = (props) => {
                 });
             }
         });
+        if (rowsForSelection && rowsForSelection.length > 0) {
+            setRowsToSelect(rowsForSelection);
+        }
     }, []);
 
     const removeRowSelection = (event) => {
         const rowId = event.currentTarget.dataset.id;
         setRowsToDeselect([Number(rowId)]);
     };
+
     const gridPageInfo =
         paginationType === "index" ? indexPageInfo : cursorPageInfo;
 
+    const getRowInfo = (rowData) => {
+        const { travelId } = rowData;
+        return {
+            isRowExpandable: travelId % 2 === 0,
+            className: travelId % 10 === 0 ? "disabled" : ""
+        };
+    };
+
     if (gridData && gridData.length > 0 && columns && columns.length > 0) {
         return (
-            <div>
+            <div className={theme === "portal" ? "sample-bg" : ""}>
                 <div className="selectedRows">
                     {userSelectedRows.map((row) => {
                         return (
@@ -983,11 +1017,13 @@ const GridComponent = (props) => {
                 </div>
                 <Grid
                     className={className}
+                    theme={theme}
                     title={title}
                     gridHeight={gridHeight}
                     gridWidth={gridWidth}
                     gridData={gridData}
-                    idAttribute={enableRowDeselection ? idAttribute : ""}
+                    rowsToOverscan={rowsToOverscan}
+                    idAttribute={passIdAttribute ? idAttribute : ""}
                     paginationType={hasPagination ? paginationType : null}
                     pageInfo={hasPagination ? gridPageInfo : null}
                     loadMoreData={loadMoreData}
@@ -1003,9 +1039,14 @@ const GridComponent = (props) => {
                     onRowUpdate={onRowUpdate}
                     onRowDelete={onRowDelete}
                     onRowSelect={onRowSelect}
+                    getRowInfo={passGetRowInfo ? getRowInfo : null}
                     onGridRefresh={passOnGridRefresh ? onGridRefresh : null}
                     CustomPanel={CustomPanel}
+                    rowsToSelect={rowsToSelect}
                     rowsToDeselect={rowsToDeselect}
+                    multiRowSelection={multiRowSelection}
+                    gridHeader={gridHeader}
+                    rowSelector={rowSelector}
                     globalSearch={globalSearch}
                     columnFilter={columnFilter}
                     groupSort={groupSort}

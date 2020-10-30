@@ -11,10 +11,12 @@ import "!style-loader!css-loader!sass-loader!./Styles/main.scss";
 const Grid = (props) => {
     const {
         className,
+        theme,
         title,
         gridHeight,
         gridWidth,
         gridData,
+        rowsToOverscan,
         idAttribute,
         paginationType,
         pageInfo,
@@ -27,15 +29,20 @@ const Grid = (props) => {
         onRowUpdate,
         onRowDelete,
         onRowSelect,
+        getRowInfo,
         calculateRowHeight,
         expandableColumn,
         CustomPanel,
+        multiRowSelection,
+        gridHeader,
+        rowSelector,
         globalSearch,
         columnFilter,
         groupSort,
         columnChooser,
         exportData,
         onGridRefresh,
+        rowsToSelect,
         rowsToDeselect
     } = props;
 
@@ -124,20 +131,10 @@ const Grid = (props) => {
     };
 
     // Local state value for holding columns configuration
-    const [gridColumns, setGridColumns] = useState(
-        extractColumns(
-            columns,
-            searchColumn,
-            isDesktop,
-            updateRowInGrid,
-            expandableColumn
-        )
-    );
+    const [gridColumns, setGridColumns] = useState([]);
 
     // Local state value for holding the additional column configuration
-    const [additionalColumn, setAdditionalColumn] = useState(
-        extractAdditionalColumn(columnToExpand, isDesktop, updateRowInGrid)
-    );
+    const [additionalColumn, setAdditionalColumn] = useState(null);
 
     // Add logic to calculate height of each row, based on the content of  or more columns
     // This can be used only if developer using the component has not passed a function to calculate row height
@@ -299,15 +296,19 @@ const Grid = (props) => {
     return (
         <div
             data-testid="gridComponent"
-            className={`grid-component-container ${className || ""}`}
+            className={`grid-component-container ${className || ""} ${
+                theme === "portal" ? "neo-grid-portal" : ""
+            }`}
         >
             <Customgrid
+                theme={theme}
                 title={title}
                 gridHeight={gridHeight}
                 gridWidth={gridWidth}
                 managableColumns={gridColumns}
                 expandedRowData={additionalColumn}
                 gridData={gridData}
+                rowsToOverscan={rowsToOverscan}
                 idAttribute={idAttribute}
                 totalRecordsCount={pageInfo ? pageInfo.total : 0}
                 getRowEditOverlay={getRowEditOverlay}
@@ -315,6 +316,7 @@ const Grid = (props) => {
                 deleteRowFromGrid={deleteRowFromGrid}
                 searchColumn={searchColumn}
                 onRowSelect={onRowSelect}
+                getRowInfo={getRowInfo}
                 calculateRowHeight={
                     calculateRowHeight &&
                     typeof calculateRowHeight === "function"
@@ -329,12 +331,16 @@ const Grid = (props) => {
                 loadNextPage={loadNextPage}
                 getSortedData={getSortedData}
                 CustomPanel={CustomPanel}
+                multiRowSelection={multiRowSelection}
+                gridHeader={gridHeader}
+                rowSelector={rowSelector}
                 globalSearch={globalSearch}
                 columnFilter={columnFilter}
                 groupSort={groupSort}
                 columnChooser={columnChooser}
                 exportData={exportData}
                 onGridRefresh={onGridRefresh}
+                rowsToSelect={rowsToSelect}
                 rowsToDeselect={rowsToDeselect}
             />
             {isNextPageLoading ? (
@@ -352,12 +358,14 @@ const Grid = (props) => {
 
 Grid.propTypes = {
     className: PropTypes.string,
+    theme: PropTypes.string,
     title: PropTypes.string,
     gridHeight: PropTypes.string,
     gridWidth: PropTypes.string,
     columns: PropTypes.arrayOf(PropTypes.object),
     columnToExpand: PropTypes.object,
     gridData: PropTypes.arrayOf(PropTypes.object),
+    rowsToOverscan: PropTypes.number,
     idAttribute: PropTypes.string,
     paginationType: PropTypes.string,
     pageInfo: PropTypes.object,
@@ -366,17 +374,22 @@ Grid.propTypes = {
     onRowUpdate: PropTypes.func,
     onRowDelete: PropTypes.func,
     onRowSelect: PropTypes.func,
+    getRowInfo: PropTypes.func,
     calculateRowHeight: PropTypes.func,
     expandableColumn: PropTypes.bool,
     rowActions: PropTypes.arrayOf(PropTypes.object),
     rowActionCallback: PropTypes.func,
     CustomPanel: PropTypes.any,
+    multiRowSelection: PropTypes.bool,
+    gridHeader: PropTypes.bool,
+    rowSelector: PropTypes.bool,
     globalSearch: PropTypes.bool,
     columnFilter: PropTypes.bool,
     groupSort: PropTypes.bool,
     columnChooser: PropTypes.bool,
     exportData: PropTypes.bool,
     onGridRefresh: PropTypes.func,
+    rowsToSelect: PropTypes.array,
     rowsToDeselect: PropTypes.array
 };
 

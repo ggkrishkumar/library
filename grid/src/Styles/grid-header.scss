@@ -5,7 +5,7 @@
 .neo-grid-header {
     background-color: var(--secondary);
     display: flex;
-    padding: rem(12);
+    padding: rem(12) rem(4);
     justify-content: space-between;
     &__results {
         display: flex;

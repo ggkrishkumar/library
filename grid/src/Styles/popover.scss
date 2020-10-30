@@ -239,6 +239,13 @@
             }
             .column__innerCells__wrap {
                 margin-top: 15px;
+                &.grouped__columns__wrap {
+                    text-align: left;
+                    strong {
+                        margin-bottom: 6px;
+                        display: block;
+                    }
+                }
             }
             .column__checkbox {
                 margin-right: 10px;

@@ -8,6 +8,7 @@ const RowSelector = forwardRef(({ indeterminate, ...rest }, ref) => {
     useEffect(() => {
         resolvedRef.current.indeterminate = indeterminate;
     }, [resolvedRef, indeterminate]);
+
     return (
         <div className="row-selector-cell-container">
             <div className="form-check">

@@ -13,6 +13,7 @@ describe("Group Sort-index test Cases", () => {
             Header: "Flight",
             accessor: "flight",
             columnId: "column_1",
+            isSortable: true,
             width: 100,
             innerCells: [
                 {
@@ -20,6 +21,7 @@ describe("Group Sort-index test Cases", () => {
                     accessor: "flightno",
                     cellId: "column_1_cell_0",
                     display: true,
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
@@ -27,6 +29,7 @@ describe("Group Sort-index test Cases", () => {
                     accessor: "date",
                     cellId: "column_1_cell_1",
                     display: true,
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -39,12 +42,14 @@ describe("Group Sort-index test Cases", () => {
             accessor: "flight1",
             columnId: "column_2",
             width: 100,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Flight No1",
                     accessor: "flightno1",
                     cellId: "column_2_cell_0",
                     display: true,
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
@@ -52,6 +57,7 @@ describe("Group Sort-index test Cases", () => {
                     accessor: "date1",
                     cellId: "column_2_cell_1",
                     display: true,
+                    isSortable: true,
                     isSearchable: true
                 }
             ],

@@ -30,12 +30,14 @@ const columns = [
         accessor: "flight",
         columnId: "column_1",
         width: 100,
+        isSortable: true,
         innerCells: [
             {
                 Header: "Flight No",
                 accessor: "flightno",
                 cellId: "column_1_cell_0",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             },
             {
@@ -43,6 +45,7 @@ const columns = [
                 accessor: "date",
                 cellId: "column_1_cell_1",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             }
         ],
@@ -55,12 +58,14 @@ const columns = [
         accessor: "flight1",
         columnId: "column_2",
         width: 100,
+        isSortable: true,
         innerCells: [
             {
                 Header: "Flight No1",
                 accessor: "flightno1",
                 cellId: "column_2_cell_0",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             },
             {
@@ -68,6 +73,7 @@ const columns = [
                 accessor: "date1",
                 cellId: "column_2_cell_1",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             }
         ],
@@ -76,6 +82,8 @@ const columns = [
         isSearchable: true
     }
 ];
+
+const sortingOrders = ["Ascending", "Descending"];
 
 const sortOptions = [
     {
@@ -122,6 +130,7 @@ describe("testing sort item ", () => {
             <DndProvider backend={MultiBackend} options={HTML5toTouch}>
                 <SortingList
                     sortOptions={sortOptions}
+                    sortingOrders={sortingOrders}
                     columns={columns}
                     updateSortingOptions={updateSortingOptions}
                 />
@@ -149,6 +158,7 @@ describe("testing sort item ", () => {
             <DndProvider backend={MultiBackend} options={HTML5toTouch}>
                 <SortingList
                     sortOptions={sortOptions}
+                    sortingOrders={sortingOrders}
                     columns={columns}
                     updateSortingOptions={updateSortingOptions}
                 />
@@ -178,6 +188,7 @@ describe("testing sort item ", () => {
                     id={0}
                     columns={columns}
                     sortOption={singleSortOption}
+                    sortingOrders={sortingOrders}
                     moveSort={moveSortMock}
                     findSort={findSortMock}
                     updateSingleSortingOption={updateSingleSortingOption}
@@ -207,6 +218,7 @@ describe("testing sort item ", () => {
                     id={0}
                     columns={columns}
                     sortOption={singleSortOption}
+                    sortingOrders={sortingOrders}
                     moveSort={moveSortMock}
                     findSort={findSortMock}
                     updateSingleSortingOption={updateSingleSortingOption}
@@ -268,6 +280,7 @@ describe("testing sort item ", () => {
                     id={0}
                     columns={columns}
                     sortOption={singleSortOption}
+                    sortingOrders={sortingOrders}
                     moveSort={moveSortMock}
                     findSort={findSortMock}
                     updateSingleSortingOption={updateSingleSortingOption}

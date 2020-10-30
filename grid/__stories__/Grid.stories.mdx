@@ -44,10 +44,14 @@ const GridComponent = () => {
         lastPage: false // or - true
     };
 
+    // The accessor value of the row identifier (primary key) in the gridData.
+    // This is required for all functionalities of row selection and row deselection.
     const idAttribute = "travelId";
 
-    const gridData = [{...}, {...}]; // JSON Data
+    // JSON Data
+    const gridData = [{...}, {...}];
 
+    // The column configuration for grid based on gridData
     const columns = [
         {
             Header: "Id",
@@ -56,6 +60,7 @@ const GridComponent = () => {
             disableFilters: true,
             disableSortBy: true,
             disableResizing: true,
+            isSortable: true, // This column will appear in groupsort overlay only if 'isSortable' value is true.
             isSearchable: true,
             displayCell: (rowData, DisplayTag, isDesktop, isExpandableColumn) => {
                 // rowData -> Entire row data from gridData
@@ -75,10 +80,12 @@ const GridComponent = () => {
             Header: "Flight",
             accessor: "flight",
             width: 100,
+            isSortable: true, // This column will appear in groupsort overlay only if 'isSortable' value is true.
             innerCells: [
                 {
                     Header: "Flight No",
                     accessor: "flightno",
+                    isSortable: true,  // This inner cell will appear in groupsort overlay only if 'isSortable' value is true.
                     isSearchable: true
                 },
                 {
@@ -126,6 +133,7 @@ const GridComponent = () => {
             Header: "Segment",
             accessor: "segment",
             width: 100,
+            isSortable: true, // Column will not appear in groupsort overlay if atleast 1 inner cell have 'isSortable' value as true (Applicable only if column is having innerCells).
             innerCells: [
                 {
                     Header: "From",
@@ -169,6 +177,7 @@ const GridComponent = () => {
         }
     ];
 
+    // Configuration for data (from gridData) that has to be displayed in the row expanded region
     const columnToExpand = {
         Header: "Remarks",
         innerCells: [{ Header: "Remarks", accessor: "remarks" }],
@@ -186,6 +195,17 @@ const GridComponent = () => {
         }
     };
 
+    const getRowInfo = (rowData) => {
+        // Grid calls this function for each row, to check:
+        // 1) If expand icon is required for that row.
+        // 2) If any className has to be given for that row data container div.
+        const { travelId } = rowData;
+        return {
+            isRowExpandable: travelId % 2 === 0, // Pass true/false based on which expand icon will be displayed.
+            className: travelId % 10 === 0 ? "disabled" : "" // Pass className to be added.
+        };
+    };
+
     const getRowEditOverlay = (rowData, DisplayTag, rowUpdateCallBack) => {
         // Create a component for the row edit overlay and bind required row data to the overlay.
         // Use DisplayTag if any of the column data or inner cell data has to be controlled by the column chooser functionality in Grid.
@@ -198,6 +218,7 @@ const GridComponent = () => {
         return 80;
     };
 
+    // Options that has to be displayed in the kebab menu
     const rowActions = [
         { label: "edit" }, // Value is not required
         { label: "delete" }, // Value is not required
@@ -229,8 +250,11 @@ const GridComponent = () => {
         // An array of all selected row data will be passed in as parameter.
     };
 
-    // This should be an array of idAttribute values of rows that has to be delected from the Grid
+    // This should be an array of idAttribute values, of rows that has to be deselected from the Grid
     const rowsToDeselect = [];
+
+    // This should be an array of idAttribute values, of rows that has to be selected from the Grid
+    const rowsToSelect = [];
 
     const onGridRefresh = () => {
         // Grid will show a refresh icon in the Grid header region if this function is passed as prop to the Grid.
@@ -246,16 +270,63 @@ const GridComponent = () => {
         // Based on the updatedPageInfo, make API call and re-render grid with updated data.
     };
 
+    // True if more column data has to be shown while clicking the row expand icon
+    // By default Grid considers expandableColumn as false
+    const expandableColumn = true;
+
     // This should be react component, which will be rendered into the Grid header.
     const CustomPanel = <CustomPanel />
+
+    // False if grid needs only single row selection
+    // By default Grid considers multiRowSelection as true
+    const multiRowSelection = false;
+
+    // Number of rows to be overscanned by react-window
+    // If prop is not passed, Grid takes default value as 5.
+    const rowsToOverscan = 20;
+
+    // False if Grid column headings has to be hidden
+    // If row selectors are enabled, checkbox to select all rows will appear at the header portion (before the Grid title)
+    // By default Grid considers gridHeader as true
+    const gridHeader = true;
+
+    // False if row selector column has to be removed from Grid
+    // By default Grid considers rowSelector as true
+    const rowSelector = true;
+
+    // False if globalSearch functionality is not needed
+    // By default Grid considers globalSearch as true
+    const globalSearch = true;
+
+    // False if column filter functionality is not needed
+    // By default Grid considers columnFilter as true
+    const columnFilter = true;
+
+    // False if column group sort functionality is not needed
+    // By default Grid considers groupSort as true
+    const groupSort = true;
+
+    // False if column column chooser functionality is not needed
+    // By default Grid considers columnChooser as true
+    const columnChooser = true;
+
+    // False if export data functionality is not needed
+    // By default Grid considers exportData as true
+    const exportData = true;
+
+    // If theme is portal Grid will assign different style for Grid header portion and Grid rows.
+    // All other themes will have default stylings.
+    const theme = "portal"
 
     return (
         <Grid
             className="icargoCustomClass"
+            theme={theme}
             title="AWBs"
             gridHeight="80vh"
             gridWidth="100%"
             gridData={gridData} // *Required
+            rowsToOverscan={rowsToOverscan}
             idAttribute={idAttribute}
             paginationType={paginationType}
             pageInfo={pageInfo}
@@ -266,23 +337,26 @@ const GridComponent = () => {
             rowActionCallback={rowActionCallback}
             getRowEditOverlay={getRowEditOverlay}
             calculateRowHeight={calculateRowHeight} // *Required
-            expandableColumn
+            expandableColumn={expandableColumn}
             onRowUpdate={onRowUpdate}
             onRowDelete={onRowDelete}
             onRowSelect={onRowSelect}
+            getRowInfo={getRowInfo}
             onGridRefresh={onGridRefresh}
             CustomPanel={CustomPanel}
+            rowsToSelect={rowsToSelect}
             rowsToDeselect={rowsToDeselect}
-            globalSearch
-            columnFilter
-            groupSort
-            columnChooser
-            exportData
+            multiRowSelection={multiRowSelection}
+            gridHeader={gridHeader}
+            rowSelector={rowSelector}
+            globalSearch={globalSearch}
+            columnFilter={columnFilter}
+            groupSort={groupSort}
+            columnChooser={columnChooser}
+            exportData={exportData}
         />
     );
 };
-
-export default GridComponent;
 ```
 
 ### Variants
@@ -294,8 +368,30 @@ export default GridComponent;
 </Story>
 
 ```jsx
+// Class name 'icargoCustomClass' will be given for the most outer div in Grid.
+
 <Grid
     className="icargoCustomClass"
+    gridData={gridData}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+/>
+```
+
+#### With custom theme
+
+<Story name="With custom theme">
+    <GridComponent theme="portal" />;
+</Story>
+
+```jsx
+// Grid will be loaded with design matching 'portal' theme.
+
+<Grid
+    theme={theme}
     gridData={gridData}
     columns={columns}
     calculateRowHeight={calculateRowHeight}
@@ -312,6 +408,8 @@ export default GridComponent;
 </Story>
 
 ```jsx
+// Gid title will be '<no: rows> AWBs'.
+
 <Grid
     title="AWBs"
     gridData={gridData}
@@ -330,6 +428,8 @@ export default GridComponent;
 </Story>
 
 ```jsx
+// Grid height will be '80vh' of the screen.
+
 <Grid
     gridHeight="80vh"
     gridData={gridData}
@@ -348,6 +448,8 @@ export default GridComponent;
 </Story>
 
 ```jsx
+// Grid width will be '75%' of the screen.
+
 <Grid
     gridWidth="75%"
     gridData={gridData}
@@ -366,6 +468,9 @@ export default GridComponent;
 </Story>
 
 ```jsx
+// Row expand icon will be displayed in a separate column in Grid (Last column).
+// Values from gridData corresponding to all accessors specified in the innerCells will be displayed in the expanded region.
+
 const columnToExpand = {
     Header: "Remarks",
     innerCells: [
@@ -404,7 +509,8 @@ const columnToExpand = {
 </Story>
 
 ```jsx
-expandableColumn = true // or - expandableColumn = false
+// expandableColumn = true - can use isExpandableColumn value in display cell to show more data while expanding a row.
+// expandableColumn = false - isExpandableColumn value in display cell will be null/undefined. Use this to show complete data at once.
 
 <Grid
     gridData={gridData}
@@ -424,6 +530,11 @@ expandableColumn = true // or - expandableColumn = false
 </Story>
 
 ```jsx
+// Passed rowActions will be displayed in the kebab menu against each row.
+// Passed rowActionCallback will be called back on click of each row action, with rowData and row action value as parameters.
+// Edit row action functionality will be handelled inside the Grid. getRowEditOverlay function will be called back where user has to provide a React component with editable fields of the row.
+// Delete row action will be handelled inside the Grid. No call backs will be made in this case.
+
 const rowActions = [
     { label: "edit" }, // Value is not required
     { label: "delete" }, // Value is not required
@@ -514,14 +625,58 @@ const CustomPanel = <CustomPanel />
 />
 ```
 
-#### With rows to be deselected
+#### With single row selection
 
-<Story name="With rows to be deselected">
-    <GridComponent enableRowDeselection />;
+<Story name="With single row selection">
+    <GridComponent multiRowSelection={false} passIdAttribute />;
 </Story>
 
 ```jsx
-// This should be an array of idAttribute values of rows that has to be delected from the Grid
+// This should be a boolean value. Flase will disable multi selection and enable single selection and true will do vice-versa
+const multiRowSelection = false;
+
+<Grid
+    gridData={gridData}
+    idAttribute={idAttribute}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+    multiRowSelection={multiRowSelection}
+/>;
+```
+
+#### With rows to be selected
+
+<Story name="With rows to be selected">
+    <GridComponent passIdAttribute rowsForSelection={[1, 7, 17]} />;
+</Story>
+
+```jsx
+// This should be an array of idAttribute values of rows that has to be selected by default from the Grid.
+const rowsToSelect = [1, 7, 17];
+
+<Grid
+    gridData={gridData}
+    idAttribute={idAttribute}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+    rowsToSelect={rowsToSelect}
+/>;
+```
+
+#### With rows to be deselected
+
+<Story name="With rows to be deselected">
+    <GridComponent passIdAttribute />;
+</Story>
+
+```jsx
+// This should be an array of idAttribute values of rows that has to be deselected from the Grid.
 const rowsToDeselect = [];
 
 <Grid
@@ -590,6 +745,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// If a property 'groupHeader' is present in the column configuration. Grid will combine all columns with same 'groupHeader' value under a column heading.
+// All column based functionalities such as sorting, filtering etc. will depend on the 'Header' value and not 'groupHeader' value.
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -597,8 +755,94 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    exportData={false}
 />
+```
+
+#### With custom overscan count
+
+<Story name="With custom overscan count">
+    <GridComponent rowsToOverscan={20} />;
+</Story>
+
+```jsx
+// <Number specified in the rowsToOverscan prop> records will be over scanned by react-window.
+// By default Grid takes 5 as rowsToOverscan.
+
+<Grid
+    gridData={gridData}
+    rowsToOverscan={20}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+/>
+```
+
+#### With row specific expand icon and classNames
+
+<Story name="With row specific expand icon and classNames">
+    <GridComponent passGetRowInfo expandableColumn />;
+</Story>
+
+```jsx
+// getRowInfo function will be called against each row, which should return an object.
+// isRowExpandable value in the returned object will decide whether that row should display expand icon.
+// className value in the returned object will be used as the class name of the outer div of that row.
+
+<Grid
+    gridData={gridData}
+    columns={columns}
+    expandableColumn
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
+/>
+```
+
+#### Hide grid header
+
+<Story name="Hide grid header">
+    <GridComponent gridHeader={false} passIdAttribute />;
+</Story>
+
+```jsx
+// This should be a boolean value. Flase will not render the Grid column header.
+const gridHeader = false;
+
+<Grid
+    gridData={gridData}
+    idAttribute={idAttribute}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+    gridHeader={gridHeader}
+/>;
+```
+
+#### Hide row selection
+
+<Story name="Hide row selection">
+    <GridComponent rowSelector={false} />;
+</Story>
+
+```jsx
+// This should be a boolean value. Flase will not render the row selector column.
+const rowSelector = false;
+
+<Grid
+    gridData={gridData}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowDelete={onRowDelete}
+    onRowSelect={onRowSelect}
+    rowSelector={rowSelector}
+/>;
 ```
 
 #### Hide globalSearch
@@ -608,6 +852,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// This should be a boolean value. Flase will not render the global search component.
+const globalSearch = false;
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -615,8 +862,8 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    globalSearch={false}
-/>
+    globalSearch={globalSearch}
+/>;
 ```
 
 #### Hide columnFilter
@@ -626,6 +873,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// This should be a boolean value. Flase will not render the column filter component.
+const columnFilter = false;
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -633,8 +883,8 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    columnFilter={false}
-/>
+    columnFilter={columnFilter}
+/>;
 ```
 
 #### Hide groupSort
@@ -644,6 +894,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// This should be a boolean value. Flase will not render the group sort component.
+const groupSort = false;
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -651,8 +904,8 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    groupSort={false}
-/>
+    groupSort={groupSort}
+/>;
 ```
 
 #### Hide columnChooser
@@ -662,6 +915,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// This should be a boolean value. Flase will not render the column chooser component.
+const columnChooser = false;
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -669,8 +925,8 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    columnChooser={false}
-/>
+    columnChooser={columnChooser}
+/>;
 ```
 
 #### Hide exportData
@@ -680,6 +936,9 @@ const loadMoreData = (updatedPageInfo) => {
 </Story>
 
 ```jsx
+// This should be a boolean value. Flase will not render the export data component.
+const exportData = false;
+
 <Grid
     gridData={gridData}
     columns={columns}
@@ -687,8 +946,8 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
-    exportData={false}
-/>
+    exportData={exportData}
+/>;
 ```
 
 #### With all props
@@ -696,18 +955,24 @@ const loadMoreData = (updatedPageInfo) => {
 <Story name="With all props">
     <GridComponent
         className="icargoCustomClass"
+        theme="portal"
         title="AWBs"
         gridHeight="80vh"
         gridWidth="100%"
+        rowsToOverscan={20}
         hasPagination
         passColumnToExpand
         expandableColumn
         passRowActions
         passRowActionCallback
+        passGetRowInfo
         passOnGridRefresh
         CustomPanel={CustomPanel}
         enableGroupHeaders
-        enableRowDeselection
+        rowsForSelection={[1, 7, 17]}
+        passIdAttribute
+        gridHeader
+        rowSelector
         globalSearch
         columnFilter
         groupSort
@@ -720,10 +985,12 @@ const loadMoreData = (updatedPageInfo) => {
 ```jsx
 <Grid
     className={className}
+    theme={theme}
     title={title}
     gridHeight={gridHeight}
     gridWidth={gridWidth}
     gridData={gridData}
+    rowsToOverscan={20}
     idAttribute={idAttribute}
     paginationType={paginationType}
     pageInfo={gridPageInfo}
@@ -738,13 +1005,17 @@ const loadMoreData = (updatedPageInfo) => {
     onRowUpdate={onRowUpdate}
     onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
     onGridRefresh={onGridRefresh}
     CustomPanel={CustomPanel}
+    rowsToSelect={rowsToSelect}
     rowsToDeselect={rowsToDeselect}
-    globalSearch={globalSearch}
-    columnFilter={columnFilter}
-    groupSort={groupSort}
-    columnChooser={columnChooser}
-    exportData={exportData}
+    gridHeader
+    rowSelector
+    globalSearch
+    columnFilter
+    groupSort
+    columnChooser
+    exportData
 />
 ```

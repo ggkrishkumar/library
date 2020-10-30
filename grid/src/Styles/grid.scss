@@ -3,6 +3,26 @@
     @return #{$remSize}rem;
 }
 
+.neo-grid-portal {
+    .neo-grid-header {
+        background: transparent;
+    }
+    .neo-grid .table-row-wrap {
+        background: var(--white);
+        border-radius: 12px;
+    }
+    .neo-grid .table-row {
+        padding-bottom: 10px;
+        border: none;
+    }
+    .neo-grid .tbody {
+        margin-top: 10px;
+    }
+    .neo-grid .tbody .row-selector-cell-container {
+        justify-content: center;
+        align-items: center;
+    }
+}
 .neo-grid {
     .table {
         border-top: 1px solid var(--border-grey);
@@ -12,6 +32,15 @@
         .table-cell {
             padding: 8px 4px;
         }
+        &.withScroll {
+            .tr {
+                overflow-y: scroll;
+                overflow-x: hidden;
+                &::-webkit-scrollbar {
+                    visibility: hidden;
+                }
+            }
+        }
     }
     .tbody {
         .row-selector-cell-container {
@@ -19,6 +48,16 @@
             height: 100%;
             display: flex;
             align-items: flex-start;
+        }
+        .disabled {
+            .table-row-wrap {
+                background-color: var(--light-grey);
+                pointer-events: none;
+                opacity: 0.4;
+                .form-check-input {
+                    background-color: var(--light-grey);
+                }
+            }
         }
     }
     .table-row {
@@ -55,10 +94,6 @@
             &:hover {
                 border-left: 1px solid var(--border-grey);
                 border-right: 1px solid var(--border-grey);
-            }
-            &.withScroll:last-child {
-                padding: 0;
-                width: rem(53) !important;
             }
             .column-heading-title {
                 height: 100%;
@@ -102,6 +137,7 @@
     }
     .resizer {
         right: -5px;
+        left: -5px;
         width: 10px;
         height: 100%;
         position: absolute;

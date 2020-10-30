@@ -47,6 +47,18 @@
     --em-base: 16;
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/*  portal theme Styles
+*  ------------------------------------------------------ */
+.sample-bg {
+    background: rgb(235, 239, 243);
+}
+
 /*  Checkbox Styles
 *  ------------------------------------------------------ */
 .form-check {

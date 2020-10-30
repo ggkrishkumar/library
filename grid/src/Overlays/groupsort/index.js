@@ -19,15 +19,26 @@ const GroupSort = (props) => {
 
     const columns = convertToIndividualColumns(gridColumns);
     const sortingOrders = ["Ascending", "Descending"];
-    const defaultSortingOption = [
-        {
-            sortBy: columns[0].accessor,
-            sortOn: columns[0].innerCells
-                ? columns[0].innerCells[0].accessor
-                : "value",
-            order: sortingOrders[0]
+    let defaultSortingOption = [];
+    const defaultSortBy = columns.find((col) => col.isSortable);
+    if (defaultSortBy && defaultSortBy.accessor) {
+        let defaultSortOn = "value";
+        if (defaultSortBy.innerCells && defaultSortBy.innerCells.length > 0) {
+            const sortableInnerCell = defaultSortBy.innerCells.find(
+                (cell) => cell.isSortable
+            );
+            if (sortableInnerCell && sortableInnerCell.accessor) {
+                defaultSortOn = sortableInnerCell.accessor;
+            }
         }
-    ];
+        defaultSortingOption = [
+            {
+                sortBy: defaultSortBy.accessor,
+                sortOn: defaultSortOn,
+                order: sortingOrders[0]
+            }
+        ];
+    }
 
     const [sortOptions, setSortOptions] = useState([]);
     const [isErrorDisplayed, setIsErrorDisplayed] = useState(false);
@@ -139,6 +150,7 @@ const GroupSort = (props) => {
                         >
                             <SortingList
                                 sortOptions={sortOptions}
+                                sortingOrders={sortingOrders}
                                 columns={columns}
                                 updateSortingOptions={updateSortingOptions}
                                 updateSingleSortingOption={

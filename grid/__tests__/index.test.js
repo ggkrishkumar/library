@@ -37,21 +37,25 @@ describe("render Index file ", () => {
             Header: "Id",
             accessor: "travelId",
             width: 50,
+            isSortable: true,
             disableFilters: true
         },
         {
             Header: "Flight",
             accessor: "flight",
             width: 100,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Flight No",
                     accessor: "flightno",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
                     Header: "Date",
                     accessor: "date",
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -63,21 +67,25 @@ describe("render Index file ", () => {
             Header: "SR",
             accessor: "sr",
             width: 90,
+            isSortable: true,
             isSearchable: true
         },
         {
             Header: "ULD Positions",
             accessor: "uldPositions",
             width: 120,
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Position",
                     accessor: "position",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
                     Header: "Value",
                     accessor: "value",
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -332,6 +340,14 @@ describe("render Index file ", () => {
         { label: "Close Summary", value: "CloseSummary" }
     ];
 
+    const getRowInfo = (rowData) => {
+        const { travelId } = rowData;
+        return {
+            isRowExpandable: travelId % 2 === 0,
+            className: travelId % 10 === 0 ? "disabled" : ""
+        };
+    };
+
     const mockGridHeight = "80vh";
     const mockGridWidth = "100%";
     const mockTitle = "AWBs";
@@ -500,11 +516,12 @@ describe("render Index file ", () => {
     });
     afterEach(cleanup);
 
-    it("test row expand, column filter and Ascending group sort without row height calculation", () => {
+    it("test custom className, theme, row expand, column filter and Ascending group sort without row height calculation", () => {
         mockOffsetSize(600, 600);
         const { container, getByTestId } = render(
             <Grid
                 className="icargoCustomClass"
+                theme="portal"
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -534,6 +551,12 @@ describe("render Index file ", () => {
             "icargoCustomClass"
         );
         expect(customClassElement.length).toBeGreaterThan(0);
+
+        // Check if class name for portal theme is present or not
+        const portalThemeClassElement = gridContainer.getElementsByClassName(
+            "neo-grid-portal"
+        );
+        expect(portalThemeClassElement.length).toBeGreaterThan(0);
 
         const expander = gridContainer.getElementsByClassName("expander")[2];
         act(() => {
@@ -815,15 +838,15 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
     });
 
-    it("test Grid loading with all header icons hidden, custom panel and refresh button shown", () => {
+    it("test Grid loading with row selector and all header icons hidden, custom panel and refresh button shown", () => {
         mockOffsetSize(600, 600);
         const { container } = render(
             <Grid
-                className="icargoCustomClass"
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
+                rowsToOverscan={20}
                 idAttribute="travelId"
                 paginationType="index"
                 pageInfo={pageInfo}
@@ -891,7 +914,6 @@ describe("render Index file ", () => {
         mockOffsetSize(600, 600);
         const { container } = render(
             <Grid
-                className="icargoCustomClass"
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -928,7 +950,6 @@ describe("render Index file ", () => {
         mockOffsetSize(600, 600);
         const { container } = render(
             <Grid
-                className="icargoCustomClass"
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -965,7 +986,6 @@ describe("render Index file ", () => {
         mockOffsetSize(600, 600);
         const { container, getByTestId } = render(
             <Grid
-                className="icargoCustomClass"
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -1036,5 +1056,50 @@ describe("render Index file ", () => {
             selectedRowCheckboxes[0].parentElement.parentElement.parentElement
                 .nextElementSibling;
         expect(idCellContainerElement.innerHTML).toBe("0");
+    });
+
+    it("test display of row specific expand icon and class names", () => {
+        mockOffsetSize(600, 600);
+        const { container, getAllByTestId } = render(
+            <Grid
+                gridData={data}
+                idAttribute="travelId"
+                paginationType="index"
+                pageInfo={pageInfo}
+                loadMoreData={mockLoadMoreData}
+                columns={gridColumns}
+                columnToExpand={mockAdditionalColumn}
+                onRowUpdate={mockUpdateRowData}
+                onRowDelete={mockDeleteRowData}
+                onRowSelect={mockSelectBulkData}
+                getRowInfo={getRowInfo}
+            />
+        );
+        const gridContainer = container;
+        expect(gridContainer).toBeInTheDocument();
+
+        // Check rows with class name "disabled"
+        const totalRowsCountInThisPage = document.getElementsByClassName(
+            "table-row tr"
+        ).length;
+        const totalDisabledRowsCountInThisPage = document.getElementsByClassName(
+            "table-row tr disabled"
+        ).length;
+        // Check if atleast 1 disabled row is present
+        expect(totalDisabledRowsCountInThisPage).toBeGreaterThan(0);
+        // Check if all rows are not disabled
+        expect(totalDisabledRowsCountInThisPage).toBeLessThan(
+            totalRowsCountInThisPage
+        );
+
+        // Check if expand icon is not present for all rows
+        const totalExpandIconsInThisPage = getAllByTestId("rowExpanderIcon")
+            .length;
+        // Check if atleast 1 expand icon is present
+        expect(totalExpandIconsInThisPage).toBeGreaterThan(0);
+        // Check if all rows are not having expand icons
+        expect(totalExpandIconsInThisPage).toBeLessThan(
+            totalRowsCountInThisPage
+        );
     });
 });

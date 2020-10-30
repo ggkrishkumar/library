@@ -33,6 +33,9 @@ export const extractColumns = (
 
             // Loop through inner cells and set flag and Id
             if (isInnerCellsPresent) {
+                // Set isSortable for column as false if that column is having innercells and none are sortable
+                let isInnerCellSortable = false;
+
                 innerCells.map((cell, cellIndex) => {
                     const cellElem = cell;
 
@@ -43,8 +46,17 @@ export const extractColumns = (
                     if (cellElem.display !== false) {
                         cellElem.display = true;
                     }
+
+                    // Update isInnerCellSortable to true if any of the inner cells are sortable
+                    if (cellElem.isSortable === true) {
+                        isInnerCellSortable = true;
+                    }
+
                     return cellElem;
                 });
+
+                // Update isSortable prop of column based on the value of isInnerCellSortable
+                elem.isSortable = isInnerCellSortable;
             }
 
             // Add an indentifier that this is a column not for expanded region

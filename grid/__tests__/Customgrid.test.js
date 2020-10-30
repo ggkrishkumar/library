@@ -40,6 +40,7 @@ describe("render Customgrid", () => {
             disableFilters: true,
             columnId: "column_0",
             display: true,
+            isSortable: true,
             isGroupHeader: false
         },
         {
@@ -47,12 +48,14 @@ describe("render Customgrid", () => {
             accessor: "flight",
             width: 100,
             columnId: "column_1",
+            isSortable: true,
             innerCells: [
                 {
                     Header: "Flight No",
                     accessor: "flightno",
                     display: true,
                     cellId: "column_1_cell_0",
+                    isSortable: true,
                     isSearchable: true
                 },
                 {
@@ -60,6 +63,7 @@ describe("render Customgrid", () => {
                     accessor: "date",
                     display: true,
                     cellId: "column_1_cell_1",
+                    isSortable: true,
                     isSearchable: true
                 }
             ],
@@ -74,6 +78,7 @@ describe("render Customgrid", () => {
             accessor: "sr",
             width: 90,
             columnId: "column_2",
+            isSortable: true,
             display: true,
             isSearchable: true,
             isGroupHeader: false

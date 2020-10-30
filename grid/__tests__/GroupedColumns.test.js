@@ -436,7 +436,10 @@ describe("render Index file ", () => {
 
         // Check if group header is present or not
         let groupHeader = getAllByTestId("grid-group-header");
-        expect(groupHeader.length).toBe(1);
+        expect(groupHeader.length).toBe(6); // 1 row selector + 1 row option + 3 normal columns + 1 grouped collumn (inside that 2 normal columns)
+        // Check total number of original columns
+        let gridHeader = getAllByTestId("grid-header");
+        expect(gridHeader.length).toBe(7); // 1 row selector + 1 row option + 5 normal columns (including 2 columns that comes under group header)
         // Check if all columns are present
         let columnHeadingsCount = gridContainer.getElementsByClassName(
             "column-heading"
@@ -482,7 +485,10 @@ describe("render Index file ", () => {
         });
         // Check if group header is still present or not
         groupHeader = getAllByTestId("grid-group-header");
-        expect(groupHeader.length).toBe(1);
+        expect(groupHeader.length).toBe(6); // 1 row selector + 1 row option + 3 normal columns + 1 grouped collumn (inside that 1 normal column and 1 hidden column)
+        // Check total number of original columns
+        gridHeader = getAllByTestId("grid-header");
+        expect(gridHeader.length).toBe(6); // 1 row selector + 1 row option + 4 normal columns (including 2 columns that comes under group header and excluding hidden column)
         // Check if all columns are present
         columnHeadingsCount = gridContainer.getElementsByClassName(
             "column-heading"
@@ -508,7 +514,10 @@ describe("render Index file ", () => {
         });
         // Check if group header is still present or not
         groupHeader = getAllByTestId("grid-group-header");
-        expect(groupHeader.length).toBe(1);
+        expect(groupHeader.length).toBe(6); // 1 row selector + 1 row option + 3 normal columns + 1 grouped collumn (inside that 2 normal columns)
+        // Check total number of original columns
+        gridHeader = getAllByTestId("grid-header");
+        expect(gridHeader.length).toBe(7); // 1 row selector + 1 row option + 5 normal columns (including 2 columns that comes under group header)
         // Check if all columns are present
         columnHeadingsCount = gridContainer.getElementsByClassName(
             "column-heading"

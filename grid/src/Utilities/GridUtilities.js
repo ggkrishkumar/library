@@ -4,17 +4,15 @@ export const updatedActionsHeaderClass = () => {
     );
     if (tableContainerList && tableContainerList.length > 0) {
         const tableContainer = tableContainerList[0];
-        const columnHeadings = document.getElementsByClassName(
-            "column-heading"
-        );
-        if (columnHeadings && columnHeadings.length > 0) {
-            const lastColumnHeading = columnHeadings[columnHeadings.length - 1];
+        const tableHeaders = document.getElementsByClassName("table-row--head");
+        if (tableHeaders && tableHeaders.length > 0) {
+            const tableHeader = tableHeaders[0];
             if (tableContainer.offsetHeight < tableContainer.scrollHeight) {
-                if (!lastColumnHeading.classList.contains("withScroll")) {
-                    lastColumnHeading.classList.add("withScroll");
+                if (!tableHeader.classList.contains("withScroll")) {
+                    tableHeader.classList.add("withScroll");
                 }
             } else {
-                lastColumnHeading.classList.remove("withScroll");
+                tableHeader.classList.remove("withScroll");
             }
         }
     }
@@ -54,6 +52,29 @@ export const findSelectedRowIdAttributes = (selectedRows, idAttribute) => {
     return rowIdentifiers;
 };
 
+export const findSelectedRowIdFromIdAttribute = (
+    selectedRows,
+    idAttribute,
+    userSelectedRowIdentifiers
+) => {
+    if (
+        selectedRows &&
+        selectedRows.length > 0 &&
+        userSelectedRowIdentifiers &&
+        userSelectedRowIdentifiers.length > 0 &&
+        idAttribute
+    ) {
+        const idAttributeValue = userSelectedRowIdentifiers[0];
+        const selectedRow = selectedRows.find((row) => {
+            return row.original[idAttribute] === idAttributeValue;
+        });
+        if (selectedRow) {
+            return selectedRow.id;
+        }
+    }
+    return null;
+};
+
 export const convertToIndividualColumns = (managableColumns) => {
     let modifiedColumns = [];
     managableColumns.forEach((item) => {
@@ -78,6 +99,17 @@ export const checkdisplayOfGroupedColumns = (groupedColumn) => {
                 return true;
             }
         }
+    }
+    return false;
+};
+
+export const checkIfGroupsortIsApplicable = (columns) => {
+    const individualColumns = convertToIndividualColumns(columns);
+    const sortableColumn = individualColumns.find(
+        (col) => col.isSortable === true
+    );
+    if (sortableColumn) {
+        return true;
     }
     return false;
 };

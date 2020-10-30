@@ -399,6 +399,7 @@ describe("Reference test cases", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
+                rowsToOverscan={20}
                 idAttribute="travelId"
                 paginationType="index"
                 pageInfo={pageInfo}
@@ -524,7 +525,6 @@ describe("Reference test cases", () => {
         });
         // Check if row actions overlay has been opened
         rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
-        rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
         expect(rowActionsOverlay).toBeInTheDocument();
         // Find and click delete link
         const deleteActionLink = getByTestId("rowAction-deleteRow");
@@ -558,7 +558,6 @@ describe("Reference test cases", () => {
             );
         });
         // Check if row actions overlay has been opened
-        rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
         rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
         expect(rowActionsOverlay).toBeInTheDocument();
         // Find and click additional action item

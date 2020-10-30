@@ -35,9 +35,11 @@ const ExportData = (props) => {
     // managedAdditionalColumn - additional column displayed in colum setting region
     // downloadTypes - types of downloads user has selected
     // warning - error message to be displayed
-    const [managedColumns, setManagedColumns] = useState(columns);
+    const [managedColumns, setManagedColumns] = useState(
+        JSON.parse(JSON.stringify(columns))
+    );
     const [managedAdditionalColumn, setManagedAdditionalColumn] = useState(
-        additionalColumn
+        JSON.parse(JSON.stringify(additionalColumn))
     );
     const [downloadTypes, setDownloadTypes] = useState([]);
     const [warning, setWarning] = useState("");
@@ -322,9 +324,14 @@ const ExportData = (props) => {
     };
 
     useEffect(() => {
-        setManagedColumns(columns);
-        setManagedAdditionalColumn(additionalColumn);
-    }, [columns, additionalColumn]);
+        setManagedColumns(JSON.parse(JSON.stringify(columns)));
+    }, [columns]);
+
+    useEffect(() => {
+        setManagedAdditionalColumn(
+            JSON.parse(JSON.stringify(additionalColumn))
+        );
+    }, [additionalColumn]);
 
     if (isExportOverlayOpen) {
         return (

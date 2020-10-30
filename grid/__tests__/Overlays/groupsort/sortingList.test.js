@@ -28,12 +28,14 @@ const columns = [
         accessor: "flight",
         columnId: "column_1",
         width: 100,
+        isSortable: true,
         innerCells: [
             {
                 Header: "Flight No",
                 accessor: "flightno",
                 cellId: "column_1_cell_0",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             },
             {
@@ -41,6 +43,7 @@ const columns = [
                 accessor: "date",
                 cellId: "column_1_cell_1",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             }
         ],
@@ -53,12 +56,14 @@ const columns = [
         accessor: "flight1",
         columnId: "column_2",
         width: 100,
+        isSortable: true,
         innerCells: [
             {
                 Header: "Flight No1",
                 accessor: "flightno1",
                 cellId: "column_2_cell_0",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             },
             {
@@ -66,6 +71,7 @@ const columns = [
                 accessor: "date1",
                 cellId: "column_2_cell_1",
                 display: true,
+                isSortable: true,
                 isSearchable: true
             }
         ],
@@ -74,6 +80,8 @@ const columns = [
         isSearchable: true
     }
 ];
+
+const sortingOrders = ["Ascending", "Descending"];
 
 const sortItems = [
     {
@@ -103,6 +111,7 @@ describe("test cases for sorting list", () => {
             >
                 <SortingList
                     sortOptions={sortProps.sortArray}
+                    sortingOrders={sortingOrders}
                     columns={columns}
                 />
             </DndProvider>
@@ -134,7 +143,11 @@ describe("test cases for sorting list", () => {
                 backend={TouchBackend}
                 options={{ enableMouseEvents: true }}
             >
-                <SortingList sortOptions={sortItems} columns={columns} />
+                <SortingList
+                    sortOptions={sortItems}
+                    sortingOrders={sortingOrders}
+                    columns={columns}
+                />
             </DndProvider>
         );
         expect(getByText("Date1")).toBeInTheDocument();
@@ -150,6 +163,7 @@ describe("test cases for sorting list", () => {
             <DndProvider backend={MultiBackend} options={HTML5toTouch}>
                 <SortingList
                     sortOptions={sortItems}
+                    sortingOrders={sortingOrders}
                     columns={columns}
                     updateSortingOptions={updateSortingOptions}
                 />
