@@ -1,12 +1,21 @@
 /* eslint-disable no-undef */
 import React from "react";
-import { render, cleanup, fireEvent } from "@testing-library/react";
-import { act } from "react-dom/test-utils";
+import { render, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/extend-expect";
+/* eslint-disable no-unused-vars */
+import regeneratorRuntime from "regenerator-runtime";
+import { act } from "react-dom/test-utils";
 import Grid from "../src/index";
-import GroupSort from "../src/Overlays/groupsort";
+import ExportData from "../src/Overlays/exportdata";
 
-describe("Group sort functionality test", () => {
+describe("Export data functionality test", () => {
+    jest.setTimeout(30000);
+    HTMLCanvasElement.prototype.getContext = () => {
+        // return whatever getContext has to return
+        return [];
+    };
+    global.URL.createObjectURL = jest.fn();
+
     const mockOffsetSize = (width, height, scrollHeight) => {
         Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
             configurable: true,
@@ -24,6 +33,17 @@ describe("Group sort functionality test", () => {
 
     const getColumns = (mockFlightEdit) => {
         return [
+            {
+                Header: "Null column"
+            },
+            {
+                Header: "Null column cell",
+                innerCells: [
+                    {
+                        Header: "Null cell"
+                    }
+                ]
+            },
             {
                 Header: "Id",
                 accessor: "travelId",
@@ -698,6 +718,71 @@ describe("Group sort functionality test", () => {
         ];
     };
 
+    const getColumnToExpand = () => {
+        return {
+            Header: "Remarks",
+            innerCells: [
+                { Header: "Remarks", accessor: "remarks" },
+                { Header: "ULD Positions", accessor: "uldPositions" },
+                { Header: "Details", onlyInTablet: true, accessor: "details" }
+            ],
+            displayCell: (rowData, DisplayTag, isDesktop) => {
+                const { remarks, details } = rowData;
+                const {
+                    startTime,
+                    endTime,
+                    status,
+                    additionalStatus,
+                    flightModel,
+                    bodyType,
+                    type,
+                    timeStatus
+                } = details || {};
+                const timeStatusArray = timeStatus ? timeStatus.split(" ") : [];
+                const timeValue = timeStatusArray.shift();
+                const timeText = timeStatusArray.join(" ");
+                return (
+                    <div
+                        className="remarks-wrap details-wrap"
+                        data-testid="expandcell"
+                    >
+                        <DisplayTag columnKey="remarks" cellKey="remarks">
+                            <ul>
+                                <li>{remarks}</li>
+                            </ul>
+                        </DisplayTag>
+                        <DisplayTag columnKey="details" cellKey="details">
+                            <ul>
+                                <li>
+                                    {startTime} - {endTime}
+                                </li>
+                                <li className="divider">|</li>
+                                <li>
+                                    <span>{status}</span>
+                                </li>
+                                <li className="divider">|</li>
+                                <li>{additionalStatus}</li>
+                                <li className="divider">|</li>
+                                <li>{flightModel}</li>
+                                <li className="divider">|</li>
+                                <li>{bodyType}</li>
+                                <li className="divider">|</li>
+                                <li>
+                                    <span>{type}</span>
+                                </li>
+                                <li className="divider">|</li>
+                                <li>
+                                    <strong>{timeValue} </strong>
+                                    <span>{timeText}</span>
+                                </li>
+                            </ul>
+                        </DisplayTag>
+                    </div>
+                );
+            }
+        };
+    };
+
     const getGridData = () => {
         // Data with Null and Undefined values
         const newResult = [
@@ -875,646 +960,540 @@ describe("Group sort functionality test", () => {
         return [...newResult, ...data];
     };
 
-    const mockColumnsWithGroupSort = getColumns();
-    const mockColumnsWithoutGroupSort = getColumns().map((col) => {
-        const updatedCol = { ...col };
-        if (updatedCol) {
-            delete updatedCol.isSortable;
-            const { innerCells } = updatedCol;
-            if (innerCells && innerCells.length > 0) {
-                updatedCol.innerCells = innerCells.map((cell) => {
-                    const updatedCell = cell;
-                    delete updatedCell.isSortable;
-                    return updatedCell;
-                });
-            }
-        }
-        return updatedCol;
-    });
-    const mockColumnsWithDefaultSortHavingInnerCells = getColumns().map(
-        (col, index) => {
-            const updatedCol = { ...col };
-            if (index === 0) {
-                delete updatedCol.isSortable;
-            }
-            return updatedCol;
-        }
-    );
-    const gridColumnsWithoutAccessor = [
-        {
-            Header: "Null Column",
-            isSortable: true
-        }
-    ];
-    const mockColumnCellWithoutAccessor = [
-        {
-            Header: "Null Column",
-            isSortable: true
-        },
-        {
-            Header: "Null Cell Column",
-            accessor: "noAccessor",
-            isSortable: true,
-            innerCells: [
-                {
-                    Header: "Null Cell",
-                    isSortable: true
-                }
-            ]
-        }
-    ];
+    const mockGridColumns = getColumns();
+    const mockAdditionalColumn = getColumnToExpand();
     const mockData = getGridData();
-    const mockServerSideSorting = jest.fn();
-    const mockUpdateRowData = jest.fn();
-    const mockSelectBulkData = jest.fn();
 
+    afterEach(cleanup);
     let mockContainer;
-    beforeEach(() => {
+    beforeAll(() => {
         mockContainer = document.createElement("div");
         document.body.appendChild(mockContainer);
     });
-    afterEach(cleanup);
 
-    it("test group sort component without columns", () => {
+    it("test export data component without columns", () => {
         mockOffsetSize(600, 600);
         const { container } = render(
-            <GroupSort
-                toggleGroupSortOverLay={undefined}
-                groupSortOptions={null}
-                gridColumns={[]}
-                applyGroupSort={undefined}
-            />
-        );
-        // Check if group sort overlay has been loaded
-        const groupSortOverlay = container.querySelectorAll(
-            "[data-testid='groupsortoverlay']"
-        );
-        expect(groupSortOverlay.length).toBe(0);
-    });
-
-    it("test group sort failing to add sort option with null column", () => {
-        const { container, getAllByTestId, getByTestId } = render(
-            <Grid
-                gridData={mockData}
-                idAttribute="travelId"
-                columns={gridColumnsWithoutAccessor}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
+            <ExportData
+                toggleExportDataOverlay={undefined}
+                rows={[]}
+                columns={[]}
+                additionalColumn={null}
             />
         );
         const gridContainer = container;
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
-        // Check if Group osrt icon is present
-        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
-        expect(groupSortIcon.length).toBe(1);
-
-        // Open Group sort Icon
-        act(() => {
-            groupSortIcon[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check if grid has been loaded
-        const groupSortOverlay = getAllByTestId("groupsortoverlay");
-        expect(groupSortOverlay.length).toBe(1);
-
-        // Add sort
-        const addSortLink = getByTestId("addSort");
-        act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 0 as there are no columns with accessor
-        const sortOptionsCount = gridContainer.querySelectorAll(
-            "[data-testid='sortItem']"
-        ).length;
-        expect(sortOptionsCount).toBe(0);
-
-        // Clear all sort options
-        const clearAllButton = getByTestId("clearSort");
-        act(() => {
-            clearAllButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-    });
-
-    it("test group sort, add sort option with column having a cell without accessor", () => {
-        const { container, getAllByTestId, getByTestId } = render(
-            <Grid
-                gridData={mockData}
-                idAttribute="travelId"
-                columns={mockColumnCellWithoutAccessor}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-            />
+        // Check if export overlay has been loaded
+        const exportOverlay = gridContainer.querySelectorAll(
+            "[data-testid='exportoverlay']"
         );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Check if Group osrt icon is present
-        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
-        expect(groupSortIcon.length).toBe(1);
-
-        // Open Group sort Icon
-        act(() => {
-            groupSortIcon[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check if grid has been loaded
-        const groupSortOverlay = getAllByTestId("groupsortoverlay");
-        expect(groupSortOverlay.length).toBe(1);
-
-        // Add sort
-        const addSortLink = getByTestId("addSort");
-        act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 0 as there are no columns with accessor
-        const sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(1);
-
-        // Clear all sort options
-        const clearAllButton = gridContainer.querySelectorAll(
-            "[data-testid='clearSort']"
-        )[0];
-        act(() => {
-            clearAllButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
+        expect(exportOverlay.length).toBe(0);
     });
 
-    it("test group sort icon to be hidden as columns don't have isSortable property", () => {
-        mockOffsetSize(600, 600);
+    it("test export data icon to be hidden as prop to hide group sort is passed", () => {
+        mockOffsetSize(1280, 1024);
         const { container } = render(
             <Grid
                 gridData={mockData}
                 idAttribute="travelId"
-                columns={mockColumnsWithoutGroupSort}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
+                columns={mockGridColumns}
+                exportData={false}
             />
         );
         const gridContainer = container;
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
-        // Check Group sort Icon
-        const groupSortIcon = gridContainer.querySelectorAll(
-            "[data-testid='toggleGroupSortOverLay']"
+        // Check Column chooser Icon
+        const exportDataIcon = gridContainer.querySelectorAll(
+            "[data-testid='toggleExportDataOverlay']"
         );
-        expect(groupSortIcon.length).toBe(0);
+        expect(exportDataIcon.length).toBe(0);
     });
 
-    it("test group sort icon to be hidden as prop to hide group sort is passed", () => {
-        mockOffsetSize(600, 600);
-        const { container } = render(
+    it("test export data without rows", async () => {
+        mockOffsetSize(1280, 1024);
+        const { container, getByTestId, getAllByTestId, getAllByText } = render(
             <Grid
                 gridData={mockData}
                 idAttribute="travelId"
-                columns={mockColumnsWithGroupSort}
-                groupSort={false}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
             />
         );
         const gridContainer = container;
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
-        // Check Group sort Icon
-        const groupSortIcon = gridContainer.querySelectorAll(
-            "[data-testid='toggleGroupSortOverLay']"
+        // Global Filter Search with invalid value "asd"
+        let input = getByTestId("globalFilter-textbox");
+        expect(input.value).toBe("");
+        fireEvent.change(input, { target: { value: "asd" } });
+        expect(input.value).toBe("asd");
+
+        // There should not be any records
+        await waitFor(() =>
+            expect(getAllByText("No Records Found").length).toBe(1)
         );
-        expect(groupSortIcon.length).toBe(0);
-    });
 
-    it("test add, copy, delete and clear options, using gridColumns With Default Sort Having InnerCells", () => {
-        mockOffsetSize(600, 600);
-        const { container, getByTestId, getAllByTestId } = render(
-            <Grid
-                gridData={mockData}
-                idAttribute="travelId"
-                columns={mockColumnsWithDefaultSortHavingInnerCells}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Check Group sort Icon
-        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
-        expect(groupSortIcon.length).toBe(1);
-
-        // Open Group sort Icon
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
         act(() => {
-            groupSortIcon[0].dispatchEvent(
+            exportDataIcon.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Check number of sort options before adding sort, should be 0
-        let sortOptionsCount = gridContainer.querySelectorAll(
-            "[data-testid='sortItem']"
-        ).length;
-        expect(sortOptionsCount).toBe(0);
+        // Check if overlay is opened
+        let exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
 
-        // Add sort option
-        const addSortLink = getByTestId("addSort");
+        // Select csv
+        const selectCsv = getByTestId("chk_csv_test");
+        expect(selectCsv.checked).toEqual(false);
+        fireEvent.click(selectCsv);
+        expect(selectCsv.checked).toEqual(true);
+
+        // Click export data button
+        const exportButton = getByTestId("export_button");
         act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 1
-        sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(1);
-
-        // Copy sort option
-        const copyIcon = getByTestId("sort-copy-icon");
-        act(() => {
-            copyIcon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-
-        // Check number of sort options now, should be 2
-        sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(2);
-
-        // Change sortby option to the first sort option
-        const sortBySelect = getAllByTestId("groupSort-sortBy")[1];
-        fireEvent.change(sortBySelect, {
-            target: { value: "travelId" }
-        });
-
-        // Change sortby option to the third sort option
-        fireEvent.change(sortBySelect, {
-            target: { value: "segment" }
-        });
-
-        // Delete Sort option
-        const deleteIcon = getAllByTestId("sort-delete-icon")[0];
-        act(() => {
-            deleteIcon.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 1 now
-        sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(1);
-
-        // Clear all sort options
-        const clearAllButton = getByTestId("clearSort");
-        act(() => {
-            clearAllButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 0 now
-        sortOptionsCount = gridContainer.querySelectorAll(
-            "[data-testid='sortItem']"
-        ).length;
-        expect(sortOptionsCount).toBe(0);
-    });
-
-    it("test duplicate sort options", () => {
-        mockOffsetSize(600, 600);
-        const { container, getByTestId, getAllByTestId } = render(
-            <Grid
-                gridData={mockData}
-                idAttribute="travelId"
-                columns={mockColumnsWithGroupSort}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Check Group sort Icon
-        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
-        expect(groupSortIcon.length).toBe(1);
-
-        // Open Group sort Icon
-        act(() => {
-            groupSortIcon[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options before adding sort, should be 0
-        let sortOptionsCount = gridContainer.querySelectorAll(
-            "[data-testid='sortItem']"
-        ).length;
-        expect(sortOptionsCount).toBe(0);
-
-        // Add sort option
-        const addSortLink = getByTestId("addSort");
-        act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Check number of sort options now, should be 1
-        sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(1);
-
-        // Copy sort option
-        const copyIcon = getByTestId("sort-copy-icon");
-        act(() => {
-            copyIcon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-
-        // Check number of sort options now, should be 2
-        sortOptionsCount = getAllByTestId("sortItem").length;
-        expect(sortOptionsCount).toBe(2);
-
-        // Apply duplicate sort options
-        const applySortButton = getByTestId("saveSort");
-        act(() => {
-            applySortButton.dispatchEvent(
+            exportButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
         // Check for error
-        const errorMessages = getAllByTestId("duplicate-sort-error");
-        expect(errorMessages.length).toBe(1);
+        const errorMessage = getAllByText("No rows available to export");
+        expect(errorMessage.length).toBe(1);
 
-        // Clear all sort options
-        const clearAllButton = getByTestId("clearSort");
+        // Close overlay
+        const cancelButton = getByTestId("cancel_button");
         act(() => {
-            clearAllButton.dispatchEvent(
+            cancelButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Check number of sort options now, should be 0 now
-        sortOptionsCount = gridContainer.querySelectorAll(
-            "[data-testid='sortItem']"
+        // Check if overlay is opened now
+        exportDataOverlayCount = gridContainer.querySelectorAll(
+            "[data-testid='exportoverlay']"
         ).length;
-        expect(sortOptionsCount).toBe(0);
+        expect(exportDataOverlayCount).toBe(0);
+
+        // Clear filter value "asd"
+        input = getByTestId("globalFilter-textbox");
+        expect(input.value).toBe("asd");
+        fireEvent.change(input, { target: { value: "" } });
+        expect(input.value).toBe("");
+
+        // Rows should be present
+        await waitFor(() =>
+            expect(getAllByTestId("gridrow").length).toBeGreaterThan(0)
+        );
     });
 
-    it("test adding and changing group sort options and apply group sort + along with row select to test useeffect [rowsToSelect, rowsToDeselect, gridData, groupSortOptions]", () => {
-        mockOffsetSize(600, 600);
+    it("test export data warnings", () => {
+        mockOffsetSize(1280, 1024);
+        const { container, getByTestId, getAllByTestId, getAllByText } = render(
+            <Grid
+                gridData={mockData}
+                idAttribute="travelId"
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
+            />
+        );
+        const gridContainer = container;
+        // Check if grid has been loaded
+        expect(gridContainer).toBeInTheDocument();
+
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
+        act(() => {
+            exportDataIcon.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check if overlay is opened
+        let exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
+
+        // Deselect all columns
+        const selectAllCheck = getByTestId("selectAllSearchableColumns");
+        expect(selectAllCheck.checked).toEqual(true);
+        fireEvent.click(selectAllCheck);
+        expect(selectAllCheck.checked).toEqual(false);
+
+        // Click export data button
+        let exportButton = getByTestId("export_button");
+        act(() => {
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check for error
+        let errorMessage = getAllByText(
+            "Select at least one column and a file type"
+        );
+        expect(errorMessage.length).toBe(1);
+
+        // Select a file type
+        let selectExcel = getByTestId("chk_excel_test");
+        expect(selectExcel.checked).toEqual(false);
+        fireEvent.click(selectExcel);
+        expect(selectExcel.checked).toEqual(true);
+
+        // Select remarks column too
+        const remarksCheck = getAllByTestId("selectSingleSearchableColumn")[11];
+        expect(remarksCheck.checked).toEqual(false);
+        fireEvent.click(remarksCheck);
+        expect(remarksCheck.checked).toEqual(true);
+
+        // Click export data button
+        exportButton = getByTestId("export_button");
+        act(() => {
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check for error
+        errorMessage = getAllByText("Select at least one column");
+        expect(errorMessage.length).toBe(1);
+
+        // Deselect a file type
+        selectExcel = getByTestId("chk_excel_test");
+        expect(selectExcel.checked).toEqual(true);
+        fireEvent.click(selectExcel);
+        expect(selectExcel.checked).toEqual(false);
+
+        // Select one column
+        const idCheck = getAllByTestId("selectSingleSearchableColumn")[2];
+        expect(idCheck.checked).toEqual(false);
+        fireEvent.click(idCheck);
+        expect(idCheck.checked).toEqual(true);
+
+        // Click export data button
+        exportButton = getByTestId("export_button");
+        act(() => {
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check for error
+        errorMessage = getAllByText("Select at least one file type");
+        expect(errorMessage.length).toBe(1);
+
+        // Close overlay
+        const cancelButton = getByTestId("cancel_button");
+        act(() => {
+            cancelButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check if overlay is opened now
+        exportDataOverlayCount = gridContainer.querySelectorAll(
+            "[data-testid='exportoverlay']"
+        ).length;
+        expect(exportDataOverlayCount).toBe(0);
+    });
+
+    it("download all file types", () => {
+        mockOffsetSize(1280, 1024);
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 gridData={mockData}
                 idAttribute="travelId"
-                columns={mockColumnsWithGroupSort}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
             />
         );
         const gridContainer = container;
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
-        /* Select one row and then apply group sort. This will rigger the useeffect */
-
-        // Find checkboxes
-        const rowSelectors = getAllByTestId("rowSelector-singleRow");
-        expect(rowSelectors.length).toBeGreaterThan(0);
-
-        // Select first row
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
         act(() => {
-            rowSelectors[0].dispatchEvent(
+            exportDataIcon.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Selected checkbox count should be 1
-        const selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(1);
+        // Check if overlay is opened
+        const exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
 
-        // Open Group sort Icon
-        const groupSortIcon = getByTestId("toggleGroupSortOverLay");
+        // Select csv
+        const selectCsv = getByTestId("chk_csv_test");
+        expect(selectCsv.checked).toEqual(false);
+        fireEvent.click(selectCsv);
+        expect(selectCsv.checked).toEqual(true);
+
+        // Select excel
+        const selectExcel = getByTestId("chk_excel_test");
+        expect(selectExcel.checked).toEqual(false);
+        fireEvent.click(selectExcel);
+        expect(selectExcel.checked).toEqual(true);
+
+        // Select pdf
+        const selectPdf = getByTestId("chk_pdf_test");
+        expect(selectPdf.checked).toEqual(false);
+        fireEvent.click(selectPdf);
+        expect(selectPdf.checked).toEqual(true);
+
+        // Click export data button
+        const exportButton = getByTestId("export_button");
         act(() => {
-            groupSortIcon.dispatchEvent(
+            exportButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-
-        // Add sort link
-        const addSortLink = getByTestId("addSort");
-        act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Count sort by
-        const sortByOptions = getAllByTestId("groupSort-sortBy-Option");
-        expect(sortByOptions.length).toBe(5);
-        // Count sort on options
-        let sortOnOptions = getAllByTestId("groupSort-sortOn-Option");
-        expect(sortOnOptions.length).toBe(1);
-
-        // Select third sort By option, that have multiple sory On options
-        const sortBySelect = getByTestId("groupSort-sortBy");
-        fireEvent.change(sortBySelect, {
-            target: { value: "segment" }
-        });
-        // Count sort on options
-        sortOnOptions = getAllByTestId("groupSort-sortOn-Option");
-        expect(sortOnOptions.length).toBe(2);
-
-        // Change sort on option
-        const sortOnSelect = getByTestId("groupSort-sortOn");
-        fireEvent.change(sortOnSelect, {
-            target: { value: "to" }
-        });
-
-        // Change sort order
-        const sortOrderSelect = getByTestId("groupSort-order");
-        fireEvent.change(sortOrderSelect, {
-            target: { value: "Descending" }
-        });
-
-        // Apply sort
-        const applySortButton = getByTestId("saveSort");
-        act(() => {
-            applySortButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Sort overlay should have been closed
-        const groupSortOverlay = gridContainer.querySelectorAll(
-            "[data-testid='groupsortoverlay']"
-        );
-        expect(groupSortOverlay.length).toBe(0);
     });
 
-    it("test server side group sorting", () => {
-        mockOffsetSize(600, 600);
-        const { container, getByTestId } = render(
-            <Grid
-                gridData={mockData}
-                idAttribute="travelId"
-                serverSideSorting={mockServerSideSorting}
-                columns={mockColumnsWithGroupSort}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Open Group sort Icon
-        const groupSortIcon = getByTestId("toggleGroupSortOverLay");
-        act(() => {
-            groupSortIcon.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Add sort link
-        const addSortLink = getByTestId("addSort");
-        act(() => {
-            addSortLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
-        // Apply sort
-        const saveGroupSort = getByTestId("saveSort");
-        act(() => {
-            saveGroupSort.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        expect(mockServerSideSorting).toBeCalled();
-    });
-
-    it("Drag and Drop", () => {
-        const createBubbledEvent = (type, props = {}) => {
-            const event = new Event(type, { bubbles: true });
-            Object.assign(event, props);
-            return event;
-        };
-        mockOffsetSize(600, 600);
+    it("download files with custom file name", () => {
+        mockOffsetSize(1280, 1024);
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 gridData={mockData}
                 idAttribute="travelId"
-                columns={mockColumnsWithGroupSort}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
+                fileName="customFileName"
             />
         );
-
         const gridContainer = container;
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
-        // Check Group sort Icon
-        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
-        expect(groupSortIcon.length).toBe(1);
-
-        // Open Group sort Icon
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
         act(() => {
-            groupSortIcon[0].dispatchEvent(
+            exportDataIcon.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // adding a new sort
-        const addSortLink = getByTestId("addSort");
+        // Check if overlay is opened
+        const exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
+
+        // Select csv
+        const selectCsv = getByTestId("chk_csv_test");
+        expect(selectCsv.checked).toEqual(false);
+        fireEvent.click(selectCsv);
+        expect(selectCsv.checked).toEqual(true);
+
+        // Click export data button
+        const exportButton = getByTestId("export_button");
         act(() => {
-            addSortLink.dispatchEvent(
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+    });
+
+    it("download files with columns hidden", () => {
+        mockOffsetSize(1280, 1024);
+        const { container, getByTestId, getAllByTestId } = render(
+            <Grid
+                gridData={mockData}
+                idAttribute="travelId"
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
+            />
+        );
+        const gridContainer = container;
+        // Check if grid has been loaded
+        expect(gridContainer).toBeInTheDocument();
+
+        // Open Column chooser overlay
+        const columnChooserIcon = getByTestId("toggleManageColumnsOverlay");
+        act(() => {
+            columnChooserIcon.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Check if drag and drop options are available
-        let dndOptions = getAllByTestId("sortItemDnd");
-        expect(dndOptions.length).toBe(1);
+        // Check if overlay is opened
+        let columnChooserOverlayCount = getAllByTestId("managecolumnoverlay")
+            .length;
+        expect(columnChooserOverlayCount).toBe(1);
 
-        const firstNode = dndOptions[0];
-
-        // Do drag and don't do drop there itself
+        // Reset if there are any changes before starting
+        const resetButton = getByTestId("reset_columnsManage");
         act(() => {
-            firstNode.dispatchEvent(
-                createBubbledEvent("dragstart", { clientX: 0, clientY: 0 })
-            );
-        });
-        act(() => {
-            firstNode.dispatchEvent(
-                createBubbledEvent("drop", { clientX: 0, clientY: 0 })
+            resetButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Copy sort option
-        const copyIcon = getAllByTestId("sort-copy-icon")[0];
+        // Check column and additional column boxes count in the column setting portion (should be 10 and 1)
+        let columnsCount = getAllByTestId("column-box").length;
+        let additionalColumnsCount = getAllByTestId("additional-column-box")
+            .length;
+        expect(columnsCount).toBe(10);
+        expect(additionalColumnsCount).toBe(1);
+
+        // Un check Id column checkbox
+        const idCheckbox = getAllByTestId("selectSingleSearchableColumn")[2];
+        expect(idCheckbox.checked).toBeTruthy();
+        fireEvent.click(idCheckbox);
+        expect(idCheckbox.checked).toBeFalsy();
+
+        // Check column and additional column boxes count in the column setting portion (should be 9 and 1)
+        columnsCount = getAllByTestId("column-box").length;
+        additionalColumnsCount = getAllByTestId("additional-column-box").length;
+        expect(columnsCount).toBe(9);
+        expect(additionalColumnsCount).toBe(1);
+
+        // Un check Remarks column checkbox
+        const remarksCheckbox = getAllByTestId(
+            "selectSingleSearchableColumn"
+        )[11];
+        fireEvent.click(remarksCheckbox);
+
+        // Check column and additional column boxes count in the column setting portion (should be 9 and 0)
+        columnsCount = getAllByTestId("column-box").length;
+        additionalColumnsCount = gridContainer.querySelectorAll(
+            "[data-testid='additional-column-box']"
+        ).length;
+        expect(columnsCount).toBe(9);
+        expect(additionalColumnsCount).toBe(0);
+
+        // Try to apply changes
+        const saveButton = getByTestId("save_columnsManage");
         act(() => {
-            copyIcon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-
-        // Copy sort option again
-        act(() => {
-            copyIcon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-
-        // Check if drag and drop options are available
-        dndOptions = getAllByTestId("sortItemDnd");
-        expect(dndOptions.length).toBe(3);
-
-        const secondNode = dndOptions[1];
-        const lastNode = dndOptions[2];
-
-        // Do drag and drop from 0 to 1
-        act(() => {
-            firstNode.dispatchEvent(
-                createBubbledEvent("dragstart", { clientX: 0, clientY: 0 })
+            saveButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
+
+        // Check if overlay is closed
+        columnChooserOverlayCount = gridContainer.querySelectorAll(
+            "[data-testid='managecolumnoverlay']"
+        ).length;
+        expect(columnChooserOverlayCount).toBe(0);
+
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
         act(() => {
-            secondNode.dispatchEvent(
-                createBubbledEvent("drop", { clientX: 0, clientY: 1 })
+            exportDataIcon.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Do drag and drop from 0 to 2
+        // Check if overlay is opened
+        const exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
+
+        // Select csv
+        const selectCsv = getByTestId("chk_csv_test");
+        expect(selectCsv.checked).toEqual(false);
+        fireEvent.click(selectCsv);
+        expect(selectCsv.checked).toEqual(true);
+
+        // Click export data button
+        const exportButton = getByTestId("export_button");
         act(() => {
-            firstNode.dispatchEvent(
-                createBubbledEvent("dragstart", { clientX: 0, clientY: 0 })
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
+    });
+
+    it("download files with cells hidden", () => {
+        mockOffsetSize(1280, 1024);
+        const { container, getByTestId, getAllByTestId } = render(
+            <Grid
+                gridData={mockData}
+                idAttribute="travelId"
+                columns={mockGridColumns}
+                columnToExpand={mockAdditionalColumn}
+            />
+        );
+        const gridContainer = container;
+        // Check if grid has been loaded
+        expect(gridContainer).toBeInTheDocument();
+
+        // Open Column chooser overlay
+        const columnChooserIcon = getByTestId("toggleManageColumnsOverlay");
         act(() => {
-            lastNode.dispatchEvent(
-                createBubbledEvent("drop", { clientX: 0, clientY: 150 })
+            columnChooserIcon.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
 
-        // Do drag and don't do drop - false case
+        // Check if overlay is opened
+        let columnChooserOverlayCount = getAllByTestId("managecolumnoverlay")
+            .length;
+        expect(columnChooserOverlayCount).toBe(1);
+
+        // Reset if there are any changes before starting
+        const resetButton = getByTestId("reset_columnsManage");
         act(() => {
-            firstNode.dispatchEvent(
-                createBubbledEvent("dragstart", { clientX: 0, clientY: 0 })
+            resetButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
             );
         });
-        fireEvent.dragEnd(firstNode);
+
+        // Un check flight number cell checkbox
+        const weightPercentageCheckbox = getByTestId(
+            "selectInnerCell_column_5_column_5_cell_0"
+        );
+        expect(weightPercentageCheckbox.checked).toBeTruthy();
+        fireEvent.click(weightPercentageCheckbox);
+        expect(weightPercentageCheckbox.checked).toBeFalsy();
+
+        // Un check Remarks cell checkbox
+        const remarksCellCheckbox = getByTestId(
+            "selectInnerCell_rowExpand_rowExpand_cell_0"
+        );
+        fireEvent.click(remarksCellCheckbox);
+
+        // Try to apply changes
+        const saveButton = getByTestId("save_columnsManage");
+        act(() => {
+            saveButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check if overlay is closed
+        columnChooserOverlayCount = gridContainer.querySelectorAll(
+            "[data-testid='managecolumnoverlay']"
+        ).length;
+        expect(columnChooserOverlayCount).toBe(0);
+
+        // Open Export overlay
+        const exportDataIcon = getByTestId("toggleExportDataOverlay");
+        act(() => {
+            exportDataIcon.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check if overlay is opened
+        const exportDataOverlayCount = getAllByTestId("exportoverlay").length;
+        expect(exportDataOverlayCount).toBe(1);
+
+        // Select csv
+        const selectCsv = getByTestId("chk_csv_test");
+        expect(selectCsv.checked).toEqual(false);
+        fireEvent.click(selectCsv);
+        expect(selectCsv.checked).toEqual(true);
+
+        // Click export data button
+        const exportButton = getByTestId("export_button");
+        act(() => {
+            exportButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
     });
 });

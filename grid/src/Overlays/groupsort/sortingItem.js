@@ -99,10 +99,14 @@ const SortItem = ({
     const opacity = isDragging ? 0.5 : 1;
 
     return (
-        <div className="sort__bodyContent" style={{ opacity }}>
-            <div className="sort__reorder">
+        <div
+            className="ng-popover--sort__items"
+            data-testid="sortItem"
+            style={{ opacity }}
+        >
+            <div className="ng-popover__reorder">
                 <div
-                    data-testid="sortItem"
+                    data-testid="sortItemDnd"
                     ref={(node) => drag(drop(node))}
                     style={{ cursor: "move" }}
                 >
@@ -112,11 +116,11 @@ const SortItem = ({
                 </div>
             </div>
 
-            <div className="sort__reorder">
-                <div className="sort__file">
+            <div className="ng-popover--sort__reorder">
+                <div>
                     <select
                         data-testid="groupSort-sortBy"
-                        className="custom__ctrl"
+                        className="ng-popover--sort__select"
                         onChange={changeSortByOptions}
                         value={sortOption.sortBy}
                     >
@@ -128,7 +132,7 @@ const SortItem = ({
                                         key={orgItem.columnId}
                                         value={orgItem.accessor}
                                     >
-                                        {orgItem.Header}
+                                        {orgItem.title || orgItem.Header}
                                     </option>
                                 );
                             }
@@ -137,11 +141,11 @@ const SortItem = ({
                     </select>
                 </div>
             </div>
-            <div className="sort__reorder">
-                <div className="sort__file">
+            <div className="ng-popover--sort__reorder">
+                <div>
                     <select
                         data-testid="groupSort-sortOn"
-                        className="custom__ctrl"
+                        className="ng-popover--sort__select"
                         onChange={changeSortOnOptions}
                         value={sortOption.sortOn}
                     >
@@ -151,7 +155,7 @@ const SortItem = ({
                                 (innerCellItem) => (
                                     <option
                                         data-testid="groupSort-sortOn-Option"
-                                        key={`${innerCellItem.Header}_${innerCellItem.accessor}`}
+                                        key={innerCellItem.cellId}
                                         value={innerCellItem.accessor}
                                     >
                                         {innerCellItem.Header}
@@ -170,11 +174,11 @@ const SortItem = ({
                     </select>
                 </div>
             </div>
-            <div className="sort__reorder">
-                <div className="sort__file">
+            <div className="ng-popover--sort__reorder">
+                <div>
                     <select
                         data-testid="groupSort-order"
-                        className="custom__ctrl"
+                        className="ng-popover--sort__select"
                         value={sortOption.order}
                         onChange={changeSortOrderOptions}
                     >
@@ -189,10 +193,11 @@ const SortItem = ({
                     </select>
                 </div>
             </div>
-            <div className="sort__reorder">
+            <div className="ng-popover--sort__reorder">
                 <div
-                    className="sort__icon"
+                    className="ng-popover--sort__icon"
                     role="presentation"
+                    data-testid="sort-copy-icon"
                     onClick={copySort}
                 >
                     <i>
@@ -200,10 +205,11 @@ const SortItem = ({
                     </i>
                 </div>
             </div>
-            <div className="sort__reorder">
+            <div className="ng-popover--sort__reorder">
                 <div
-                    className="sort__icon"
+                    className="ng-popover--sort__icon"
                     role="presentation"
+                    data-testid="sort-delete-icon"
                     onClick={deleteSort}
                 >
                     <i>

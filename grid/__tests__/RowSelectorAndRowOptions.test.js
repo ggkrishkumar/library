@@ -2,8 +2,6 @@
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/extend-expect";
-/* eslint-disable no-unused-vars */
-import regeneratorRuntime from "regenerator-runtime";
 import Grid from "../src/index";
 
 describe("render Index file ", () => {
@@ -231,7 +229,6 @@ describe("render Index file ", () => {
     }
 
     const mockUpdateRowData = jest.fn();
-    const mockDeleteRowData = jest.fn();
     const mockSelectBulkData = jest.fn();
 
     let mockContainer;
@@ -243,37 +240,34 @@ describe("render Index file ", () => {
 
     it("test total number of columns including row selectors and column expand", () => {
         mockOffsetSize(600, 600);
-        const { container } = render(
+        const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
                 columns={gridColumns}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 expandableColumn
             />
         );
         const gridContainer = container;
-
         // Check if grid has been loaded
         expect(gridContainer).toBeInTheDocument();
 
         // Check if column for row actions is present or not
-        const gridFirstRow = gridContainer.getElementsByClassName(
-            "table-row-wrap"
-        )[0];
-        const columnsInRow = gridFirstRow.getElementsByClassName("table-cell");
+        const gridFirstRow = getAllByTestId("gridrow")[0];
+        const columnsInRow = gridFirstRow.querySelectorAll(
+            "[data-testid='gridrowcell']"
+        );
         expect(columnsInRow.length).toBe(6); // 4 Columns + 1 row selector column + 1 row for expand icon
     });
 
     it("test if 1 column is hidden when no row expand or column expand prop is passed", () => {
         mockOffsetSize(600, 600);
-        const { container } = render(
+        const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
                 columns={gridColumns}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
             />
         );
@@ -283,29 +277,30 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
 
         // Check if column for row actions is present or not
-        const gridFirstRow = gridContainer.getElementsByClassName(
-            "table-row-wrap"
-        )[0];
-        const columnsInRow = gridFirstRow.getElementsByClassName("table-cell");
+        const gridFirstRow = getAllByTestId("gridrow")[0];
+        const columnsInRow = gridFirstRow.querySelectorAll(
+            "[data-testid='gridrowcell']"
+        );
         expect(columnsInRow.length).toBe(5); // 4 Columns + 1 row selector column
         // Check if row actions is not present
-        const rowOptions = gridContainer.getElementsByClassName(
-            "row-options-wrap"
+        const rowOptions = gridFirstRow.querySelectorAll(
+            "[data-testid='rowActions-open-link']"
         );
         expect(rowOptions.length).toBe(0);
         // Check if expand icon is not present
-        const rowExpanders = gridContainer.getElementsByClassName("expander");
+        const rowExpanders = gridFirstRow.querySelectorAll(
+            "[data-testid='rowExpanderIcon']"
+        );
         expect(rowExpanders.length).toBe(0);
     });
 
     it("test if 1 column is hidden when row selectors are hidden", () => {
         mockOffsetSize(600, 600);
-        const { container } = render(
+        const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
                 columns={gridColumns}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 expandableColumn
                 rowSelector={false}
@@ -317,14 +312,14 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
 
         // Check if column for row selection is present or not
-        const gridFirstRow = gridContainer.getElementsByClassName(
-            "table-row-wrap"
-        )[0];
-        const columnsInRow = gridFirstRow.getElementsByClassName("table-cell");
+        const gridFirstRow = getAllByTestId("gridrow")[0];
+        const columnsInRow = gridFirstRow.querySelectorAll(
+            "[data-testid='gridrowcell']"
+        );
         expect(columnsInRow.length).toBe(5); // 4 Columns + 1 row actions column
         // Check if row selector is not present
-        const rowSelectors = gridContainer.getElementsByClassName(
-            "row-selector-cell-container"
+        const rowSelectors = gridContainer.querySelectorAll(
+            "[data-testid='rowSelector-singleRow']"
         );
         expect(rowSelectors.length).toBe(0);
     });

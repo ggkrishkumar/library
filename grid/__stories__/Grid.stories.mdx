@@ -48,6 +48,56 @@ const GridComponent = () => {
     // This is required for all functionalities of row selection and row deselection.
     const idAttribute = "travelId";
 
+    // The accessor value of the row identifier (primary key) in the parent data.
+    // This is required only if tree view is required.
+    const parentIdAttribute = "titleId"
+
+    // In tree view, this is the row data of parent rows in the grid
+    const parentData = [
+        {
+            titleId: 0,
+            title: "EXCVGRATES",
+            count: 3,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        },
+        {
+            titleId: 1,
+            title: "EXCVGRATES",
+            count: 3,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        },
+        {
+            titleId: 2,
+            title: "EXCVGRATES",
+            count: 1,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        }
+    ];
+
+    // In tree view, this is the column configuration for parent rows in Grid.
+    // Parent columns will not be displayd anywhere in the Grid.
+    const originalParentColumn = {
+        displayCell: (rowData) => {
+            const { titleId, title, count, lastModified, date, time } = rowData;
+            return (
+                <div>
+                    <p className="parentRow">{titleId}</p>
+                    <p className="parentRow">{title}</p>
+                    <p className="parentRow">{count}</p>
+                    <p className="parentRow">{lastModified}</p>
+                    <p className="parentRow">{date}</p>
+                    <p className="parentRow">{time}</p>
+                </div>
+            );
+        }
+    };
+
     // JSON Data
     const gridData = [{...}, {...}];
 
@@ -77,7 +127,17 @@ const GridComponent = () => {
         },
         {
             groupHeader: "Flight & Segment", // Required only if a group header has to be displayed for columns. Columns with same groupHeader property value will be grouped under one column
-            Header: "Flight",
+            Header: () => { // If a jsx element is passed as Header, use below prop 'title' which should be string value that can be used in group sort, manage columns and export overlays.
+                return (
+                    <div className="flightHeader">
+                        <i className="flightIcon">
+                            <img src={FlightIcon} alt="Flight Info" />
+                        </i>
+                        <span className="flightText">Info</span>
+                    </div>
+                );
+            },
+            title: "Flight", // Use this if Header is a jsx element.
             accessor: "flight",
             width: 100,
             isSortable: true, // This column will appear in groupsort overlay only if 'isSortable' value is true.
@@ -198,19 +258,14 @@ const GridComponent = () => {
     const getRowInfo = (rowData) => {
         // Grid calls this function for each row, to check:
         // 1) If expand icon is required for that row.
-        // 2) If any className has to be given for that row data container div.
+        // 2) If row selector checkbox is required for that row.
+        // 3) If any className has to be given for that row data container div.
         const { travelId } = rowData;
         return {
             isRowExpandable: travelId % 2 === 0, // Pass true/false based on which expand icon will be displayed.
+            isRowSelectable: travelId % 3 !== 0, // Pass true/false based on which row selector checkbox will be displayed.
             className: travelId % 10 === 0 ? "disabled" : "" // Pass className to be added.
         };
-    };
-
-    const getRowEditOverlay = (rowData, DisplayTag, rowUpdateCallBack) => {
-        // Create a component for the row edit overlay and bind required row data to the overlay.
-        // Use DisplayTag if any of the column data or inner cell data has to be controlled by the column chooser functionality in Grid.
-        // Call back rowUpdateCallBack, whenever user is making any updates to the data from this overlay.
-        // From this function return that react.
     };
 
     const calculateRowHeight = (row, gridColumns) => {
@@ -218,19 +273,14 @@ const GridComponent = () => {
         return 80;
     };
 
-    // Options that has to be displayed in the kebab menu
-    const rowActions = [
-        { label: "edit" }, // Value is not required
-        { label: "delete" }, // Value is not required
-        { label: "Send SCR", value: "SCR" },
-        { label: "Segment Summary", value: "SegmentSummary" },
-        { label: "Open Summary", value: "OpenSummary" },
-        { label: "Close Summary", value: "CloseSummary" }
-    ];
-
-    const rowActionCallback = (rowData, actionValue) => {
-        // Grid will call this function whenever user is clicking any of the row actions items other than "edit" and "delete".
-        // Corresponding row data and the actionValue of the clicked rowAction will be passed in as parameters.
+    // Call back made by Grid for each row, to display the row actions in Kebab overlay in Grid.
+    const rowActions = (rowData, closeOverlay) => {
+        // Grid will call this function for all rows while binding data on to Grid.
+        // Corresponding 'rowData' is passed as one of the parameters.
+        // Another parameter is the 'closeOverlay', which is a method that can be called to close the Kebab overlay.
+        // Return a JSX from this function, which will be bound to the row actions Kebab overlay.
+        // All functionalities of the row actions should be handelled outside the Grid.
+        return <RowAction />
     };
 
     const onRowUpdate = (originalRow, updatedRow) => {
@@ -239,15 +289,15 @@ const GridComponent = () => {
         // Using these data, update the data source and rerender the Grid.
     };
 
-    const onRowDelete = (originalRow) => {
-        // Grid will call this function when user is deleting a row.
-        // Deleted row data will be passed in as parameter.
-        // Using this data, update the data source and rerender the Grid.
-    };
-
-    const onRowSelect = (selectedRows) => {
+    const onRowSelect = (selectedRows, deSelectedRows) => {
         // Grid will call this function when user selects or deselects a row.
-        // An array of all selected row data will be passed in as parameter.
+        // An array of all selected row data will be passed in as the first parameter.
+        // An array of deSelectedRow(s) will be passed in as the second parameter.
+        /************
+            Make sure:
+            * If a row is selected, remove that row details from 'rowsToDeselect' prop value (if present).
+            * If a row is deselected, remove that row details from 'rowsToSelect' prop value (if present).
+        ************/
     };
 
     // This should be an array of idAttribute values, of rows that has to be deselected from the Grid
@@ -261,13 +311,28 @@ const GridComponent = () => {
         // Grid will call this function when user cliks that icon.
     };
 
-    const loadMoreData = (updatedPageInfo) => {
+    const loadMoreData = (updatedPageInfo, parentId) => {
+        /* Grid without tree view */
+
         // Grid will call this function only if pageInfo is passed a prop to Grid and the value of lastPage in the pageInfo is false.
         // This function is called when user reaches bottom row of the grid by scrolling down.
-        // Grid passes in a parameter updatedPageInfo.
-        // If paginationType is "index", updatedPageInfo will be { (pageNum + 1), pageSize}
-        // Else if paginationType is "cursor", updatedPageInfo will be { endCursor, pageSize}
+        // Grid passes in 2 parameters updatedPageInfo and parentId.
+        // parentId will be null in case of Grid without tree view.
+        // updatedPageInfo will be:
+        // 1) If paginationType is "index", updatedPageInfo will be { (pageNum + 1), pageSize}
+        // 2) Else if paginationType is "cursor", updatedPageInfo will be { endCursor, pageSize}
         // Based on the updatedPageInfo, make API call and re-render grid with updated data.
+
+        /* Grid with tree view */
+
+        // Grid will call this function when user clicks the parent row expand icon for the forst time or the load more button present at the end of child data.
+        // Grid passes in 2 parameters updatedPageInfo and parentId.
+        // parentId will be the parentIdAttribute value of the selected parent.
+        // updatedPageInfo will be null if child data of that parent is getting called for the first time (clicks the parent row expand icon for the forst time).
+        // If user is clicking the load more button present at the end of child data, updatedPageInfo will be:
+        // 1) If paginationType is "index" for the corresponding parent, updatedPageInfo will be { (pageNum + 1), pageSize}
+        // 2) Else if paginationType is "cursor" for the corresponding parent, updatedPageInfo will be { endCursor, pageSize}
+        // Based on the updatedPageInfo and parentId, make API call and re-render grid with updated data.
     };
 
     // True if more column data has to be shown while clicking the row expand icon
@@ -314,9 +379,39 @@ const GridComponent = () => {
     // By default Grid considers exportData as true
     const exportData = true;
 
+    // If the file name of exported files from Grid has to be customized, use this prop.
+    // Pass a string value and in that case this will be the file name of exported files (with different extensions).
+    // If prop is not specified Grid uses 'iCargo Neo Report' as the file name.
+    const fileName = "Custom filename";
+
     // If theme is portal Grid will assign different style for Grid header portion and Grid rows.
     // All other themes will have default stylings.
     const theme = "portal"
+
+    // Pass this function as a prop to Grid, then Grid will callback this function if user has selected group sorting
+    const serverSideSorting = (groupSortOptions) => {
+        // Sort grid data ( or, child data of each parent in case of tree view) based on the sort parameters passed in.
+        // This function should re-render the Grid with sorted gridData prop.
+        // groupSortOptions is the Object representation of the sorting options that user has selected.
+        // Example:
+        // [
+        //     {
+        //         "sortBy": "segment", // This will be the accessor value of the column
+        //         "sortOn": "from", // This will be the accessor value of the innerCell, or just String "value" if no innerCells are present
+        //         "order": "Ascending" // Either "Ascending" or "Descending"
+        //     },
+        //     {
+        //         "sortBy": "flight",
+        //         "sortOn": "flightno",
+        //         "order": "Descending"
+        //     },
+        //     {
+        //         "sortBy": "travelId",
+        //         "sortOn": "value",
+        //         "order": "Ascending"
+        //     }
+        // ]
+    }
 
     return (
         <Grid
@@ -331,15 +426,17 @@ const GridComponent = () => {
             paginationType={paginationType}
             pageInfo={pageInfo}
             loadMoreData={loadMoreData}
+            serverSideSorting={serverSideSorting}
             columns={columns} // *Required
             columnToExpand={columnToExpand}
+            parentColumn={parentColumn} // Only for tree view
+            parentIdAttribute={parentIdAttribute} // Only for tree view
+            parentRowExpandable={parentRowExpandable} // Only for tree view
+            parentRowsToExpand={parentRowsToExpand} // Only for tree view
             rowActions={rowActions}
-            rowActionCallback={rowActionCallback}
-            getRowEditOverlay={getRowEditOverlay}
             calculateRowHeight={calculateRowHeight} // *Required
             expandableColumn={expandableColumn}
             onRowUpdate={onRowUpdate}
-            onRowDelete={onRowDelete}
             onRowSelect={onRowSelect}
             getRowInfo={getRowInfo}
             onGridRefresh={onGridRefresh}
@@ -354,6 +451,7 @@ const GridComponent = () => {
             groupSort={groupSort}
             columnChooser={columnChooser}
             exportData={exportData}
+            fileName={fileName}
         />
     );
 };
@@ -376,7 +474,6 @@ const GridComponent = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -384,7 +481,7 @@ const GridComponent = () => {
 #### With custom theme
 
 <Story name="With custom theme">
-    <GridComponent theme="portal" />;
+    <GridComponent passTheme />;
 </Story>
 
 ```jsx
@@ -396,7 +493,6 @@ const GridComponent = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -416,7 +512,6 @@ const GridComponent = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -436,7 +531,6 @@ const GridComponent = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -456,7 +550,6 @@ const GridComponent = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -497,7 +590,6 @@ const columnToExpand = {
     columnToExpand={columnToExpand}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />;
 ```
@@ -517,7 +609,6 @@ const columnToExpand = {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     expandableColumn
 />
@@ -526,46 +617,19 @@ const columnToExpand = {
 #### With row actions
 
 <Story name="With row actions">
-    <GridComponent passRowActions passRowActionCallback />;
+    <GridComponent passRowActions />;
 </Story>
 
 ```jsx
-// Passed rowActions will be displayed in the kebab menu against each row.
-// Passed rowActionCallback will be called back on click of each row action, with rowData and row action value as parameters.
-// Edit row action functionality will be handelled inside the Grid. getRowEditOverlay function will be called back where user has to provide a React component with editable fields of the row.
-// Delete row action will be handelled inside the Grid. No call backs will be made in this case.
+// Passed JSX element will be displayed inside the kebab menu against each row.
 
-const rowActions = [
-    { label: "edit" }, // Value is not required
-    { label: "delete" }, // Value is not required
-    { label: "Send SCR", value: "SCR" },
-    { label: "Segment Summary", value: "SegmentSummary" },
-    { label: "Open Summary", value: "OpenSummary" },
-    { label: "Close Summary", value: "CloseSummary" }
-];
-
-const rowActionCallback = (rowData, actionValue) => {
-    // Grid will call this function whenever user is clicking any of the row actions items other than "edit" and "delete".
-    // Corresponding row data and the actionValue of the clicked rowAction will be passed in as parameters.
-};
-
-const getRowEditOverlay = (rowData, DisplayTag, rowUpdateCallBack) => {
-    // Create a component for the row edit overlay and bind required row data to the overlay.
-    // Use DisplayTag if any of the column data or inner cell data has to be controlled by the column chooser functionality in Grid.
-    // Call back rowUpdateCallBack, whenever user is making any updates to the data from this overlay.
-    // From this function return that react.
-};
-
-const onRowUpdate = (originalRow, updatedRow) => {
-    // Grid will call this function whenever user edits a cell or a row.
-    // Row data before editing and the updated row data after editing will be passed as parameters.
-    // Using these data, update the data source and rerender the Grid.
-};
-
-const onRowDelete = (originalRow) => {
-    // Grid will call this function when user is deleting a row.
-    // Deleted row data will be passed in as parameter.
-    // Using this data, update the data source and rerender the Grid.
+const rowActions = (rowData, closeOverlay) => {
+    // Grid will call this function for all rows while binding data on to Grid.
+    // Corresponding 'rowData' is passed as one of the parameters.
+    // Another parameter is the 'closeOverlay', which is a method that can be called to close the Kebab overlay.
+    // Return a JSX from this function, which will be bound to the row actions Kebab overlay.
+    // All functionalities of the row actions should be handelled outside the Grid.
+    return <RowAction />;
 };
 
 <Grid
@@ -573,10 +637,7 @@ const onRowDelete = (originalRow) => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     rowActions={rowActions}
-    rowActionCallback={rowActionCallback}
-    getRowEditOverlay={getRowEditOverlay}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />;
 ```
@@ -598,7 +659,6 @@ const onGridRefresh = () => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     onGridRefresh={onGridRefresh}
 />;
@@ -619,7 +679,6 @@ const CustomPanel = <CustomPanel />
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     CustomPanel={CustomPanel}
 />
@@ -641,7 +700,6 @@ const multiRowSelection = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     multiRowSelection={multiRowSelection}
 />;
@@ -657,13 +715,23 @@ const multiRowSelection = false;
 // This should be an array of idAttribute values of rows that has to be selected by default from the Grid.
 const rowsToSelect = [1, 7, 17];
 
+const onRowSelect = (selectedRows, deSelectedRows) => {
+    // Grid will call this function when user selects or deselects a row.
+    // An array of all selected row data will be passed in as the first parameter.
+    // An array of deSelectedRow(s) will be passed in as the second parameter.
+    /************
+        Make sure:
+        * If a row is selected, remove that row details from 'rowsToDeselect' prop value (if present).
+        * If a row is deselected, remove that row details from 'rowsToSelect' prop value (if present).
+    ************/
+};
+
 <Grid
     gridData={gridData}
     idAttribute={idAttribute}
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     rowsToSelect={rowsToSelect}
 />;
@@ -677,7 +745,18 @@ const rowsToSelect = [1, 7, 17];
 
 ```jsx
 // This should be an array of idAttribute values of rows that has to be deselected from the Grid.
-const rowsToDeselect = [];
+const rowsToDeselect = []; // [1] or [1, 7]
+
+const onRowSelect = (selectedRows, deSelectedRows) => {
+    // Grid will call this function when user selects or deselects a row.
+    // An array of all selected row data will be passed in as the first parameter.
+    // An array of deSelectedRow(s) will be passed in as the second parameter.
+    /************
+        Make sure:
+        * If a row is selected, remove that row details from 'rowsToDeselect' prop value (if present).
+        * If a row is deselected, remove that row details from 'rowsToSelect' prop value (if present).
+    ************/
+};
 
 <Grid
     gridData={gridData}
@@ -685,7 +764,6 @@ const rowsToDeselect = [];
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     rowsToDeselect={rowsToDeselect}
 />;
@@ -733,9 +811,47 @@ const loadMoreData = (updatedPageInfo) => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />;
+```
+
+#### With server side sorting
+
+<Story name="With server side sorting">
+    <GridComponent enableServersideSorting />;
+</Story>
+
+```jsx
+// Pass 'serverSideSorting' function as a prop and Grid will call this function whenever user selects group sort option.
+// This function to re-render the Grid with sorted 'gridData'.
+
+<Grid
+    gridData={gridData}
+    serverSideSorting={serverSideSorting}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+/>
+```
+
+#### With react component as Grid Headers
+
+<Story name="With react component as Grid Headers">
+    <GridComponent enableJsxHeaders />;
+</Story>
+
+```jsx
+// If required pass jsx element as Header of a column.
+// But in that case, also make sure to pass a string value to another property 'title', which can be used for representing column in group sort, manage columns and export overlays.
+
+<Grid
+    gridData={gridData}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+/>
 ```
 
 #### With grouped headers
@@ -753,7 +869,6 @@ const loadMoreData = (updatedPageInfo) => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -774,7 +889,6 @@ const loadMoreData = (updatedPageInfo) => {
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
 />
 ```
@@ -788,6 +902,7 @@ const loadMoreData = (updatedPageInfo) => {
 ```jsx
 // getRowInfo function will be called against each row, which should return an object.
 // isRowExpandable value in the returned object will decide whether that row should display expand icon.
+// isRowSelectable value in the returned object will decide whether that row should display row selector checkbox.
 // className value in the returned object will be used as the class name of the outer div of that row.
 
 <Grid
@@ -796,7 +911,6 @@ const loadMoreData = (updatedPageInfo) => {
     expandableColumn
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     getRowInfo={getRowInfo}
 />
@@ -818,7 +932,6 @@ const gridHeader = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     gridHeader={gridHeader}
 />;
@@ -839,8 +952,6 @@ const rowSelector = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
-    onRowSelect={onRowSelect}
     rowSelector={rowSelector}
 />;
 ```
@@ -860,7 +971,6 @@ const globalSearch = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     globalSearch={globalSearch}
 />;
@@ -881,7 +991,6 @@ const columnFilter = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     columnFilter={columnFilter}
 />;
@@ -902,7 +1011,6 @@ const groupSort = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     groupSort={groupSort}
 />;
@@ -923,7 +1031,6 @@ const columnChooser = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     columnChooser={columnChooser}
 />;
@@ -944,9 +1051,28 @@ const exportData = false;
     columns={columns}
     calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     exportData={exportData}
+/>;
+```
+
+#### With custom file name for exported files
+
+<Story name="With custom file name for exported files">
+    <GridComponent fileName="Custom filename" />;
+</Story>
+
+```jsx
+// This should be a string value. If prop is specified this will be the name of the exported files (with different extensions).
+const fileName="Custom filename"
+
+<Grid
+    gridData={gridData}
+    columns={columns}
+    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+    fileName={fileName}
 />;
 ```
 
@@ -954,30 +1080,16 @@ const exportData = false;
 
 <Story name="With all props">
     <GridComponent
+        allProps
         className="icargoCustomClass"
-        theme="portal"
         title="AWBs"
         gridHeight="80vh"
         gridWidth="100%"
         rowsToOverscan={20}
-        hasPagination
-        passColumnToExpand
-        expandableColumn
-        passRowActions
-        passRowActionCallback
-        passGetRowInfo
-        passOnGridRefresh
         CustomPanel={CustomPanel}
-        enableGroupHeaders
+        fileName="Custom filename"
         rowsForSelection={[1, 7, 17]}
-        passIdAttribute
-        gridHeader
-        rowSelector
-        globalSearch
-        columnFilter
-        groupSort
-        columnChooser
-        exportData
+        fileName="Custom filename"
     />
     ;
 </Story>
@@ -985,7 +1097,6 @@ const exportData = false;
 ```jsx
 <Grid
     className={className}
-    theme={theme}
     title={title}
     gridHeight={gridHeight}
     gridWidth={gridWidth}
@@ -998,12 +1109,9 @@ const exportData = false;
     columns={columns}
     columnToExpand={columnToExpand}
     rowActions={rowActions}
-    rowActionCallback={rowActionCallback}
-    getRowEditOverlay={getRowEditOverlay}
     calculateRowHeight={calculateRowHeight}
     expandableColumn={expandableColumn}
     onRowUpdate={onRowUpdate}
-    onRowDelete={onRowDelete}
     onRowSelect={onRowSelect}
     getRowInfo={getRowInfo}
     onGridRefresh={onGridRefresh}
@@ -1017,5 +1125,178 @@ const exportData = false;
     groupSort
     columnChooser
     exportData
+    fileName={fileName}
+/>
+```
+
+#### Tree view with all props
+
+<Story name="Tree view with all props">
+    <GridComponent
+        allProps
+        className="icargoCustomClass"
+        title="AWBs"
+        gridHeight="80vh"
+        gridWidth="100%"
+        rowsToOverscan={20}
+        CustomPanel={CustomPanel}
+        fileName="Custom filename"
+        rowsForSelection={[1, 7, 17]}
+        fileName="Custom filename"
+        treeStructure
+    />
+    ;
+</Story>
+
+```jsx
+<Grid
+    className={className}
+    title={title}
+    gridHeight={gridHeight}
+    gridWidth={gridWidth}
+    gridData={gridData}
+    rowsToOverscan={20}
+    idAttribute={idAttribute}
+    paginationType={paginationType}
+    pageInfo={gridPageInfo}
+    loadMoreData={loadMoreData}
+    columns={columns}
+    columnToExpand={columnToExpand}
+    parentColumn={parentColumn}
+    parentIdAttribute={parentIdAttribute}
+    rowActions={rowActions}
+    calculateRowHeight={calculateRowHeight}
+    expandableColumn={expandableColumn}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
+    onGridRefresh={onGridRefresh}
+    CustomPanel={CustomPanel}
+    rowsToSelect={rowsToSelect}
+    rowsToDeselect={rowsToDeselect}
+    gridHeader
+    rowSelector
+    globalSearch
+    columnFilter
+    groupSort
+    columnChooser
+    exportData
+    fileName={fileName}
+/>
+```
+
+#### Tree view without expansion
+
+<Story name="Tree view without expansion">
+    <GridComponent
+        allProps
+        className="icargoCustomClass"
+        title="AWBs"
+        gridHeight="80vh"
+        gridWidth="100%"
+        rowsToOverscan={20}
+        CustomPanel={CustomPanel}
+        fileName="Custom filename"
+        rowsForSelection={[1, 7, 17]}
+        fileName="Custom filename"
+        treeStructure
+        parentRowExpandable={false}
+    />
+    ;
+</Story>
+
+```jsx
+<Grid
+    className={className}
+    title={title}
+    gridHeight={gridHeight}
+    gridWidth={gridWidth}
+    gridData={gridData}
+    rowsToOverscan={20}
+    idAttribute={idAttribute}
+    paginationType={paginationType}
+    pageInfo={gridPageInfo}
+    loadMoreData={loadMoreData}
+    columns={columns}
+    columnToExpand={columnToExpand}
+    parentColumn={parentColumn}
+    parentIdAttribute={parentIdAttribute}
+    parentRowExpandable={parentRowExpandable}
+    rowActions={rowActions}
+    calculateRowHeight={calculateRowHeight}
+    expandableColumn={expandableColumn}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
+    onGridRefresh={onGridRefresh}
+    CustomPanel={CustomPanel}
+    rowsToSelect={rowsToSelect}
+    rowsToDeselect={rowsToDeselect}
+    gridHeader
+    rowSelector
+    globalSearch
+    columnFilter
+    groupSort
+    columnChooser
+    exportData
+    fileName={fileName}
+/>
+```
+
+#### Tree view with parent rows expanded
+
+<Story name="Tree view with parent rows expanded">
+    <GridComponent
+        allProps
+        className="icargoCustomClass"
+        title="AWBs"
+        gridHeight="80vh"
+        gridWidth="100%"
+        rowsToOverscan={20}
+        CustomPanel={CustomPanel}
+        fileName="Custom filename"
+        rowsForSelection={[1, 7, 17]}
+        fileName="Custom filename"
+        treeStructure
+        parentRowsToExpand={[0, 2]}
+    />
+    ;
+</Story>
+
+```jsx
+<Grid
+    className={className}
+    title={title}
+    gridHeight={gridHeight}
+    gridWidth={gridWidth}
+    gridData={gridData}
+    rowsToOverscan={20}
+    idAttribute={idAttribute}
+    paginationType={paginationType}
+    pageInfo={gridPageInfo}
+    loadMoreData={loadMoreData}
+    columns={columns}
+    columnToExpand={columnToExpand}
+    parentColumn={parentColumn}
+    parentIdAttribute={parentIdAttribute}
+    parentRowsToExpand={parentRowsToExpand}
+    rowActions={rowActions}
+    calculateRowHeight={calculateRowHeight}
+    expandableColumn={expandableColumn}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
+    onGridRefresh={onGridRefresh}
+    CustomPanel={CustomPanel}
+    rowsToSelect={rowsToSelect}
+    rowsToDeselect={rowsToDeselect}
+    gridHeader
+    rowSelector
+    globalSearch
+    columnFilter
+    groupSort
+    columnChooser
+    exportData
+    fileName={fileName}
 />
 ```

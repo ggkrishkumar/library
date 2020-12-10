@@ -15,7 +15,6 @@ import {
     useGlobalFilter,
     useExpanded
 } from "react-table";
-import { VariableSizeList as List } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import InfiniteLoader from "react-window-infinite-loader";
 import PropTypes from "prop-types";
@@ -23,8 +22,7 @@ import RowSelector from "./Functions/RowSelector";
 import DefaultColumnFilter from "./Functions/DefaultColumnFilter";
 import GlobalFilter from "./Functions/GlobalFilter";
 import RowOptions from "./Functions/RowOptions";
-import RowEditOverlay from "./Functions/RowEditOverlay";
-import RowDeleteOverLay from "./Functions/RowDeleteOverLay";
+import RowsList from "./List/RowsList";
 import ColumnReordering from "./Overlays/managecolumns";
 import GroupSort from "./Overlays/groupsort";
 import ExportData from "./Overlays/exportdata";
@@ -41,39 +39,44 @@ import {
     findSelectedRows,
     findSelectedRowIdAttributes,
     findSelectedRowIdFromIdAttribute,
+    findDeSelectedRows,
     updatedActionsHeaderClass,
     convertToIndividualColumns,
     checkdisplayOfGroupedColumns,
-    checkIfGroupsortIsApplicable
+    checkIfGroupsortIsApplicable,
+    findAllChildRows
 } from "./Utilities/GridUtilities";
 
 const listRef = createRef(null);
 
 const Customgrid = (props) => {
     const {
-        theme,
+        isDesktop,
         title,
         gridHeight,
-        gridWidth,
+        theme,
         managableColumns,
         expandedRowData,
+        parentColumn,
+        parentIdAttribute,
+        parentRowExpandable,
+        parentRowsToExpand,
+        loadChildData,
+        isParentGrid,
         gridData,
         rowsToOverscan,
         idAttribute,
+        isPaginationNeeded,
         totalRecordsCount,
-        getRowEditOverlay,
-        updateRowInGrid,
-        deleteRowFromGrid,
         searchColumn,
         onRowSelect,
         getRowInfo,
-        calculateRowHeight,
         expandableColumn,
         rowActions,
-        rowActionCallback,
         hasNextPage,
         isNextPageLoading,
         loadNextPage,
+        serverSideSorting,
         getSortedData,
         CustomPanel,
         multiRowSelection,
@@ -84,6 +87,7 @@ const Customgrid = (props) => {
         groupSort,
         columnChooser,
         exportData,
+        fileName,
         onGridRefresh,
         rowsToSelect,
         rowsToDeselect
@@ -120,53 +124,33 @@ const Customgrid = (props) => {
         setFilterOpen(!isFilterOpen);
     };
 
-    // Local state value for checking if row edit overlay is open/closed
-    const [isRowEditOverlyOpen, setIsRowEditOverlyOpen] = useState(false);
-    // Local state value to hold row data that is going to be edited
-    const [editedRowData, setEditedRowData] = useState(null);
-    // Bind the user defined row edit overlay into Grid
-    const bindRowEditOverlay = (rowValue) => {
-        setEditedRowData(rowValue);
-        setIsRowEditOverlyOpen(true);
-    };
-    // Close the row edit overlay
-    const closeRowEditOverlay = () => {
-        setEditedRowData(null);
-        setIsRowEditOverlyOpen(false);
-    };
-
-    // Local state value for checking if row delete overlay is open/closed
-    const [isRowDeleteOverlyOpen, setIsRowDeleteOverlyOpen] = useState(false);
-    // Local state value to hold row data that is going to be deleted
-    const [deletedRowData, setDeletedRowData] = useState(null);
-    // Bind the user defined row delete overlay into Grid
-    const bindRowDeleteOverlay = (rowValue) => {
-        setDeletedRowData(rowValue);
-        setIsRowDeleteOverlyOpen(true);
-    };
-    // Close the row edit overlay
-    const closeRowDeleteOverlay = () => {
-        setDeletedRowData(null);
-        setIsRowDeleteOverlyOpen(false);
-    };
-
     // Local state value for checking if group Sort Overlay is open/closed.
     const [isGroupSortOverLayOpen, setGroupSortOverLay] = useState(false);
     // Local state for group sort options
     const [groupSortOptions, setGroupSortOptions] = useState([]);
+    // Local state value for hiding/unhiding column management overlay
+    const [isManageColumnOverlayOpen, setManageColumnOpen] = useState(false);
+
     // Toggle group Sort state value based on UI clicks
     const toggleGroupSortOverLay = () => {
+        // Make sure manage column overlay is closed whenever user opens/hides group sort overlay.
+        // This is to avoid conflicts of 2 components being rendered that uses DnD library.
+        setManageColumnOpen(false);
         setGroupSortOverLay(!isGroupSortOverLayOpen);
     };
     // Call apply group sort function from parent
     const applyGroupSort = (sortOptions) => {
         setGroupSortOptions(sortOptions);
+        if (serverSideSorting && typeof serverSideSorting === "function") {
+            serverSideSorting(sortOptions);
+        }
     };
 
-    // Local state value for hiding/unhiding column management overlay
-    const [isManageColumnOverlayOpen, setManageColumnOpen] = useState(false);
     // Toggle column manage overlay show/hide state value based on UI clicks
     const toggleManageColumnsOverlay = () => {
+        // Make sure group sort overlay is closed whenever user opens/hides manage column overlay.
+        // This is to avoid conflicts of 2 components being rendered that uses DnD library.
+        setGroupSortOverLay(false);
         setManageColumnOpen(!isManageColumnOverlayOpen);
     };
     // Callback method from column manage overlay to update the column structure of the grid
@@ -187,6 +171,11 @@ const Customgrid = (props) => {
         userSelectedRowIdentifiers,
         setUserSelectedRowIdentifiers
     ] = useState([]);
+    // Local state to identify if row selection call back has to be given or not
+    const [
+        isRowSelectionCallbackNeeded,
+        setIsRowSelectionCallbackNeeded
+    ] = useState(null);
 
     // Column filter added for all columns by default
     const defaultColumn = useMemo(
@@ -196,18 +185,7 @@ const Customgrid = (props) => {
         []
     );
 
-    // Local state value for storing user expanded/collapsed row Id and expanded state
-    const [userExpandedRowDetails, setUserExpandedRowDetails] = useState(null);
-
-    // Update state value with the row id on which user has clicked the expand/collpase functionality
-    const setExpandedRowDetails = (rowId, isRowExpanded) => {
-        if (rowId) {
-            setUserExpandedRowDetails({
-                id: rowId,
-                isExpanded: isRowExpanded
-            });
-        }
-    };
+    const [expandedParentRows, setExpandedParentRows] = useState([]);
 
     // Global Search Filter Logic - React table wants all parameters passed into useTable function to be memoized
     const globalFilterLogic = useCallback(
@@ -232,34 +210,21 @@ const Customgrid = (props) => {
                 return returnValue;
             });
         },
-        [managableColumns, searchColumn]
+        [managableColumns]
     );
 
-    // Finds the rows selected by users from selectedRowIds and updates the state value and triggers the callback function.
-    // This is used in useeffects for row selection and row deselection
-    const updateSelectedRows = (rows, selectedRowIds) => {
-        if (idAttribute) {
-            const rowsSelectedByUser = findSelectedRows(rows, selectedRowIds);
-            const rowIdentifiers = findSelectedRowIdAttributes(
-                rowsSelectedByUser,
-                idAttribute
-            );
-            setUserSelectedRowIdentifiers(rowIdentifiers);
-            if (onRowSelect) {
-                onRowSelect(rowsSelectedByUser);
-            }
-        }
-    };
-
-    const isRowExpandEnabled =
-        additionalColumn &&
-        Object.keys(additionalColumn).length > 0 &&
-        additionalColumn.display === true &&
-        additionalColumn.Cell &&
-        typeof additionalColumn.Cell === "function";
-
+    const isRowExpandEnabled = !!(
+        expandedRowData &&
+        Object.keys(expandedRowData).length > 0 &&
+        expandedRowData.display === true &&
+        expandedRowData.Cell &&
+        typeof expandedRowData.Cell === "function"
+    );
     const columns = useMemo(() => gridColumns);
-    const data = useMemo(() => getSortedData([...gridData], groupSortOptions));
+    const data =
+        serverSideSorting && typeof serverSideSorting === "function"
+            ? useMemo(() => [...gridData])
+            : useMemo(() => getSortedData([...gridData], groupSortOptions));
 
     // Initialize react-table instance with the values received through properties
     const {
@@ -269,7 +234,7 @@ const Customgrid = (props) => {
         rows,
         prepareRow,
         preFilteredRows,
-        state: { globalFilter, selectedRowIds, filters, sortBy },
+        state: { globalFilter, selectedRowIds },
         setGlobalFilter,
         toggleRowSelected,
         toggleAllRowsSelected
@@ -278,8 +243,6 @@ const Customgrid = (props) => {
             columns,
             data,
             defaultColumn,
-            rowActions,
-            rowActionCallback,
             globalFilter: globalFilterLogic,
             autoResetFilters: false,
             autoResetGlobalFilter: false,
@@ -309,32 +272,83 @@ const Customgrid = (props) => {
                         minWidth: 35,
                         width: 35,
                         maxWidth: 35,
-                        Header: ({ getToggleAllRowsSelectedProps }) => {
+                        Header: (headerSelectProps) => {
+                            const {
+                                getToggleAllRowsSelectedProps
+                            } = headerSelectProps;
                             if (multiRowSelection === false) {
                                 return null;
                             }
                             return (
                                 <RowSelector
                                     data-testid="rowSelector-allRows"
-                                    {...getToggleAllRowsSelectedProps()}
+                                    {...getToggleAllRowsSelectedProps({
+                                        onClick: (event) => {
+                                            // Set state value to identify if checkbox has been selected or deselected
+                                            const selectedType =
+                                                event.currentTarget.checked ===
+                                                false
+                                                    ? "deselect"
+                                                    : "select";
+                                            setIsRowSelectionCallbackNeeded(
+                                                selectedType
+                                            );
+                                            toggleAllRowsSelected();
+                                        }
+                                    })}
                                 />
                             );
                         },
-                        Cell: ({ row }) => (
-                            <RowSelector
-                                data-testid="rowSelector-singleRow"
-                                {...row.getToggleRowSelectedProps()}
-                            />
-                        )
+                        Cell: (cellSelectProps) => {
+                            const { row } = cellSelectProps;
+                            // Check if row selector is required for this row using the getRowInfo prop passed
+                            let isRowSelectable = true;
+                            if (
+                                getRowInfo &&
+                                typeof getRowInfo === "function"
+                            ) {
+                                const rowInfo = getRowInfo(row.original);
+                                if (
+                                    rowInfo &&
+                                    rowInfo.isRowSelectable === false
+                                ) {
+                                    isRowSelectable = false;
+                                }
+                            }
+                            if (isRowSelectable) {
+                                return (
+                                    <RowSelector
+                                        data-testid="rowSelector-singleRow"
+                                        {...row.getToggleRowSelectedProps({
+                                            onClick: (event) => {
+                                                // Set state value to identify if checkbox has been selected or deselected
+                                                const selectedType =
+                                                    event.currentTarget
+                                                        .checked === false
+                                                        ? "deselect"
+                                                        : "select";
+                                                setIsRowSelectionCallbackNeeded(
+                                                    selectedType
+                                                );
+                                                row.toggleRowSelected();
+                                            }
+                                        })}
+                                    />
+                                );
+                            }
+                            return null;
+                        }
                     },
                     ...hookColumns
                 ]);
             }
             // Add last column only if required
-            const isRowActionsAvailable = rowActions && rowActions.length > 0; // If row actions are available
+            const isRowActionsAvailable = !!(
+                rowActions && typeof rowActions === "function"
+            ); // If row actions are available
             const isRowExpandAvailable = isRowExpandEnabled || expandableColumn; // If row expand option is available
             if (isRowActionsAvailable || isRowExpandAvailable) {
-                hooks.allColumns.push((hookColumns, hook) => [
+                hooks.allColumns.push((hookColumns) => [
                     ...hookColumns,
                     {
                         id: "custom",
@@ -347,8 +361,8 @@ const Customgrid = (props) => {
                         minWidth: 35,
                         width: 35,
                         maxWidth: 35,
-                        Cell: ({ row }) => {
-                            const { instance } = hook;
+                        Cell: (cellCustomProps) => {
+                            const { row } = cellCustomProps;
                             // Check if expand icon is required for this row using the getRowInfo prop passed
                             let isRowExpandable = true;
                             if (
@@ -356,47 +370,33 @@ const Customgrid = (props) => {
                                 typeof getRowInfo === "function"
                             ) {
                                 const rowInfo = getRowInfo(row.original);
-                                if (rowInfo) {
-                                    isRowExpandable = rowInfo.isRowExpandable;
+                                if (
+                                    rowInfo &&
+                                    rowInfo.isRowExpandable === false
+                                ) {
+                                    isRowExpandable = false;
                                 }
                             }
                             return (
-                                <div className="action">
-                                    <RowOptions
-                                        row={row}
-                                        rowActions={
-                                            instance ? instance.rowActions : []
-                                        }
-                                        rowActionCallback={
-                                            instance
-                                                ? instance.rowActionCallback
-                                                : null
-                                        }
-                                        bindRowEditOverlay={bindRowEditOverlay}
-                                        bindRowDeleteOverlay={
-                                            bindRowDeleteOverlay
-                                        }
-                                    />
+                                <div className="ng-action">
+                                    {isRowActionsAvailable ? (
+                                        <RowOptions
+                                            row={row}
+                                            rowActions={rowActions}
+                                        />
+                                    ) : null}
                                     {isRowExpandAvailable && isRowExpandable ? (
                                         <span
-                                            className="expander"
+                                            className="ng-action__expander"
                                             data-testid="rowExpanderIcon"
-                                            {...row.getToggleRowExpandedProps({
-                                                onClick: () => {
-                                                    setExpandedRowDetails(
-                                                        row.id,
-                                                        row.isExpanded
-                                                    );
-                                                    row.toggleRowExpanded();
-                                                }
-                                            })}
+                                            {...row.getToggleRowExpandedProps()}
                                         >
                                             <i>
                                                 <IconAngle
                                                     className={
                                                         row.isExpanded
-                                                            ? "icon-arrow-up"
-                                                            : "icon-arrow-down"
+                                                            ? "ng-action__arrow-up"
+                                                            : "ng-action__arrow-down"
                                                     }
                                                 />
                                             </i>
@@ -411,6 +411,125 @@ const Customgrid = (props) => {
         }
     );
 
+    // Finds the rows (avoids if not isSelectable from getRowInfo) selected by users from selectedRowIds and updates the state value and triggers the callback function.
+    // Also identify if checkbox is checked or unchecked and if unchecked, return runchecked row details too to the callback function.
+    // This is used in useeffects for row selection and row deselection
+    const updateSelectedRows = (rowsInGrid, selectedRowIdsInGrid) => {
+        if (idAttribute) {
+            const rowsSelectedByUser = findSelectedRows(
+                rowsInGrid,
+                selectedRowIdsInGrid,
+                getRowInfo
+            );
+            const rowIdentifiers = findSelectedRowIdAttributes(
+                rowsSelectedByUser,
+                idAttribute
+            );
+            setUserSelectedRowIdentifiers(rowIdentifiers);
+            if (onRowSelect && isRowSelectionCallbackNeeded !== null) {
+                setIsRowSelectionCallbackNeeded(null);
+                onRowSelect(
+                    rowsSelectedByUser,
+                    isRowSelectionCallbackNeeded === "deselect"
+                        ? findDeSelectedRows(
+                              preFilteredRows,
+                              userSelectedRowIdentifiers,
+                              rowIdentifiers,
+                              idAttribute
+                          )
+                        : null
+                );
+            }
+        }
+    };
+
+    // Recalculate row height from index 50 less than the last rendered item index in the list
+    const reRenderListData = (index) => {
+        if (listRef && listRef.current) {
+            const { current } = listRef;
+            if (current) {
+                const indexToReset =
+                    index !== null && index !== undefined && index >= 0
+                        ? index
+                        : 0;
+                current.resetAfterIndex(indexToReset, true);
+            }
+        }
+    };
+
+    const loadMoreChildData = (row) => {
+        if (row) {
+            const { original } = row;
+            if (original) {
+                loadChildData(original);
+            }
+        }
+    };
+
+    const isParentRowOpen = (row) => {
+        let returnValue = false;
+        if (parentIdAttribute && row) {
+            const { original } = row;
+            if (original) {
+                const rowParentIdAttribute = original[parentIdAttribute];
+                if (
+                    rowParentIdAttribute !== null &&
+                    rowParentIdAttribute !== undefined
+                ) {
+                    // Check if parent row is present in state.
+                    returnValue = expandedParentRows.includes(
+                        rowParentIdAttribute
+                    );
+                }
+            }
+        }
+        return returnValue;
+    };
+
+    const toggleParentRow = (row) => {
+        if (parentIdAttribute && row) {
+            const { original } = row;
+            if (original) {
+                const rowParentIdAttribute = original[parentIdAttribute];
+                if (
+                    rowParentIdAttribute !== null &&
+                    rowParentIdAttribute !== undefined
+                ) {
+                    // Check if parent row is present in state.
+                    // If present, remove it and if not present add it.
+                    if (expandedParentRows.includes(rowParentIdAttribute)) {
+                        setExpandedParentRows(
+                            expandedParentRows.filter(
+                                (item) => item !== rowParentIdAttribute
+                            )
+                        );
+                    } else {
+                        setExpandedParentRows([
+                            ...expandedParentRows,
+                            rowParentIdAttribute
+                        ]);
+                    }
+
+                    // Check if child rows are present for parent row
+                    const childRow = rows.find((currentRow) => {
+                        return (
+                            currentRow &&
+                            currentRow.original &&
+                            currentRow.original.isParent !== true &&
+                            currentRow.original[parentIdAttribute] ===
+                                rowParentIdAttribute
+                        );
+                    });
+                    if (!childRow) {
+                        loadMoreChildData(row);
+                    } else {
+                        reRenderListData(row.index);
+                    }
+                }
+            }
+        }
+    };
+
     // Make checkbox in header title selected if no: selected rows and total rows are same
     const isAllRowsSelected = () => {
         return (
@@ -424,57 +543,30 @@ const Customgrid = (props) => {
 
     // Call method to select/de-select all rows based on the checkbox checked value
     const toggleAllRowsSelection = (event) => {
-        if (event) {
-            const { currentTarget } = event;
-            if (currentTarget) {
-                const { checked } = currentTarget;
-                toggleAllRowsSelected(checked);
-            }
-        }
-    };
-
-    // Recalculate row height from index 50 less than the last rendered item index in the list
-    const reRenderListData = (index) => {
-        const numIndex = Number(index);
-        let indexToReset = numIndex && numIndex >= 0 ? numIndex : 0;
-        if (listRef && listRef.current) {
-            const { current } = listRef;
-            if (current) {
-                const { _instanceProps } = current;
-                if (_instanceProps && indexToReset === 0) {
-                    const expectedItemsCount = overScanCount + 30;
-                    const { lastMeasuredIndex } = _instanceProps;
-                    if (lastMeasuredIndex > expectedItemsCount) {
-                        indexToReset = lastMeasuredIndex - expectedItemsCount;
-                    }
-                }
-                listRef.current.resetAfterIndex(indexToReset, true);
-            }
-        }
+        const { checked } = event.currentTarget;
+        setIsRowSelectionCallbackNeeded(
+            checked === true ? "select" : "deselect"
+        );
+        toggleAllRowsSelected(checked);
     };
 
     // Add class to last table column header (for actions) if table body is having scroll
     useEffect(() => {
-        updatedActionsHeaderClass();
+        if (gridHeader !== false) {
+            updatedActionsHeaderClass(isDesktop);
+        }
     });
-
-    // Rerender list to calculate row height after doing column sort/filter and global search
-    useEffect(() => {
-        reRenderListData();
-    }, [globalFilter, filters, sortBy]);
 
     // Update state, when user is updating columns configuration from outside Grid
     // Recalculate the row height from index 0 as columns config has been changed
     useEffect(() => {
         setGridColumns(managableColumns);
-        reRenderListData();
     }, [managableColumns]);
 
     // Update state, when user is updating additional column configuration from outside Grid
     // Recalculate the row height from index 0 as additional columns config has been changed
     useEffect(() => {
         setAdditionalColumn(expandedRowData);
-        reRenderListData();
     }, [expandedRowData]);
 
     // Update the boolean value used to identify if this is the first time render of Grid
@@ -484,37 +576,78 @@ const Customgrid = (props) => {
 
     // Update the select state of row in Grid using the hook provided by useTable method
     // Find the row Id using the key - value passed from props and use toggleRowSelected method to select the checkboxes
+    // Consider rowsToSelect, rowsToDeselect and already made selections and then select wanted rows and deselect unwanted rows.
+    // This should hapen whenever data changes or group sort is applied
     useEffect(() => {
-        if (rowsToSelect && rowsToSelect.length && idAttribute) {
-            rowsToSelect.forEach((rowId) => {
-                const rowToSelect = preFilteredRows.find((row) => {
-                    const { original } = row;
-                    return original[idAttribute] === rowId;
+        if (idAttribute) {
+            let rowsToBeSelected =
+                rowsToSelect && rowsToSelect.length > 0 ? rowsToSelect : [];
+            rowsToBeSelected =
+                !isFirstRendering &&
+                userSelectedRowIdentifiers &&
+                userSelectedRowIdentifiers.length > 0
+                    ? [...userSelectedRowIdentifiers, ...rowsToBeSelected]
+                    : rowsToBeSelected;
+            let rowsToBeDeselected =
+                rowsToDeselect && rowsToDeselect.length > 0
+                    ? rowsToDeselect
+                    : [];
+            // Romove rows from selection if the same row is present in the rowsToDeselect array
+            rowsToBeSelected = rowsToBeSelected.filter(
+                (row) => !rowsToBeDeselected.includes(row)
+            );
+            // If Grid selection is single selection consider only the first item in array
+            if (multiRowSelection === false) {
+                rowsToBeSelected =
+                    rowsToBeSelected.length > 0 ? [rowsToBeSelected[0]] : [];
+                rowsToBeDeselected =
+                    rowsToBeDeselected.length > 0
+                        ? [rowsToBeDeselected[0]]
+                        : [];
+            }
+            const updatedSelectedRowIds = [];
+            if (rowsToBeSelected && rowsToBeSelected.length > 0) {
+                rowsToBeSelected.forEach((rowId) => {
+                    const rowToSelect = preFilteredRows.find((row) => {
+                        const { original } = row;
+                        return original[idAttribute] === rowId;
+                    });
+                    if (rowToSelect) {
+                        const { id } = rowToSelect;
+                        toggleRowSelected(id, true);
+                        updatedSelectedRowIds.push(id);
+                    }
                 });
-                if (rowToSelect) {
-                    const { id } = rowToSelect;
-                    toggleRowSelected(id, true);
+            }
+            if (rowsToBeDeselected && rowsToBeDeselected.length > 0) {
+                rowsToBeDeselected.forEach((rowId) => {
+                    const rowToDeselect = preFilteredRows.find((row) => {
+                        const { original } = row;
+                        return original[idAttribute] === rowId;
+                    });
+                    if (rowToDeselect) {
+                        const { id } = rowToDeselect;
+                        toggleRowSelected(id, false);
+                    }
+                });
+            }
+            // Loop through already selected rows and find row id that are not selected yet and update it to false
+            Object.entries(selectedRowIds).forEach((objEntry) => {
+                if (objEntry && objEntry.length > 0) {
+                    const rowId = objEntry[0];
+                    if (!updatedSelectedRowIds.includes(rowId)) {
+                        toggleRowSelected(rowId, false);
+                    }
                 }
             });
         }
-    }, [rowsToSelect]);
+    }, [rowsToSelect, rowsToDeselect, gridData, groupSortOptions]);
 
-    // Update the select state of row in Grid using the hook provided by useTable method
-    // Find the row Id using the key - value passed from props and use toggleRowSelected method to deselect the checkboxes
     useEffect(() => {
-        if (rowsToDeselect && rowsToDeselect.length && idAttribute) {
-            rowsToDeselect.forEach((rowId) => {
-                const rowToDeselect = preFilteredRows.find((row) => {
-                    const { original } = row;
-                    return original[idAttribute] === rowId;
-                });
-                if (rowToDeselect) {
-                    const { id } = rowToDeselect;
-                    toggleRowSelected(id, false);
-                }
-            });
+        if (parentRowsToExpand && parentRowsToExpand.length > 0) {
+            setExpandedParentRows(parentRowsToExpand);
         }
-    }, [rowsToDeselect]);
+    }, [parentRowsToExpand]);
 
     // Trigger call back when user makes a row selection using checkbox
     // And store the rows that are selected by user for making them selected when data changes after groupsort
@@ -555,109 +688,147 @@ const Customgrid = (props) => {
         }
     }, [selectedRowIds]);
 
-    // Recalculate the row height from expanded/collapsed row index
-    useEffect(() => {
-        if (userExpandedRowDetails) {
-            const { id } = userExpandedRowDetails;
-            if (id) {
-                reRenderListData(id);
-            }
-        }
-    }, [userExpandedRowDetails]);
-
-    // Update the row selection and clear row expands when data changes
-    // Set all row selections to false and find new Ids of already selected rows and make them selected
-    // Recalculate the row height from index 0 as data has been changed
-    useEffect(() => {
-        if (!isFirstRendering) {
-            // Make rows selected if user has already made any selections
-            if (
-                userSelectedRowIdentifiers &&
-                userSelectedRowIdentifiers.length > 0 &&
-                idAttribute
-            ) {
-                const updatedSelectedRowIds = [];
-                // Loop through already selected rows and find row id and make it selected
-                userSelectedRowIdentifiers.forEach((selectedRowId) => {
-                    const updatedRow = preFilteredRows.find((row) => {
-                        const { original } = row;
-                        return original[idAttribute] === selectedRowId;
-                    });
-                    if (updatedRow) {
-                        const { id } = updatedRow;
-                        if (updatedRow) {
-                            toggleRowSelected(id, true);
-                            updatedSelectedRowIds.push(id);
-                        }
+    // Check if parent id attribute is present in the list of opened parent attributes.
+    const isParentRowCollapsed = (childRow) => {
+        let isParentCollpased = false;
+        if (
+            childRow &&
+            parentIdAttribute &&
+            parentRowExpandable !== false &&
+            isParentGrid
+        ) {
+            const { original } = childRow;
+            if (original) {
+                const { isParent } = original;
+                if (isParent !== true) {
+                    const rowParentIdAttribute = original[parentIdAttribute];
+                    if (
+                        rowParentIdAttribute !== null &&
+                        rowParentIdAttribute !== undefined &&
+                        !expandedParentRows.includes(rowParentIdAttribute)
+                    ) {
+                        isParentCollpased = true;
                     }
-                });
-                // Loop through already selected rows and find row id that are not selected yet and update it to false
-                Object.entries(selectedRowIds).forEach((objEntry) => {
-                    if (objEntry && objEntry.length > 0) {
-                        const rowId = objEntry[0];
-                        if (!updatedSelectedRowIds.includes(rowId)) {
-                            toggleRowSelected(rowId, false);
-                        }
-                    }
-                });
+                }
             }
         }
-        reRenderListData();
-    }, [gridData, groupSortOptions]);
-
-    // Create HTML structure of a single row that has to be bind to Grid
-    const renderSingleRow = (row, style) => {
-        prepareRow(row);
-
-        // Add classname passed by developer from getRowInfo prop to required rows
-        let rowClassName = "";
-        if (getRowInfo && typeof getRowInfo === "function") {
-            const rowInfo = getRowInfo(row.original);
-            if (rowInfo) {
-                rowClassName = rowInfo.className;
-            }
-        }
-
-        const rowElement = (
-            <div
-                {...row.getRowProps({ style })}
-                className={`table-row tr ${rowClassName}`}
-            >
-                <div className="table-row-wrap">
-                    {row.cells.map((cell) => {
-                        if (cell.column.display === true) {
-                            return (
-                                <div
-                                    {...cell.getCellProps()}
-                                    className="table-cell td"
-                                >
-                                    {cell.render("Cell")}
-                                </div>
-                            );
-                        }
-                        return null;
-                    })}
-                </div>
-                {/* Check if row eapand icon is clicked, and if yes, call function to bind content to the expanded region */}
-                {isRowExpandEnabled && row.isExpanded ? (
-                    <div className="expand" data-testid="rowExpandedRegion">
-                        {additionalColumn.Cell(row, additionalColumn)}
-                    </div>
-                ) : null}
-            </div>
-        );
-        return rowElement;
+        return isParentCollpased;
     };
 
-    // Render each row and cells in each row, using attributes from react window list.
-    const RenderRow = useCallback(
-        ({ index, style }) => {
-            // if (isItemLoaded(index)) - This check never became false during testing. Hence avoiding it to reach 100% code coverage in JEST test.
-            const row = rows[index];
-            return renderSingleRow(row, style);
-        },
-        [prepareRow, rows, isRowExpandEnabled, additionalColumn]
-    );
+    const isParentRowSelected = (row) => {
+        let returnValue = false;
+        if (row && parentIdAttribute && idAttribute) {
+            const { original } = row;
+            if (original) {
+                const { isParent } = original;
+                if (isParent === true) {
+                    const rowParentIdAttribute = original[parentIdAttribute];
+                    if (
+                        rowParentIdAttribute !== null &&
+                        rowParentIdAttribute !== undefined
+                    ) {
+                        let isAtleastOneChildUnselected = false;
+                        let isChildRowsAvailable = false;
+                        preFilteredRows.forEach((gridRow) => {
+                            if (gridRow) {
+                                const gridRowOriginal = gridRow.original;
+                                if (
+                                    gridRowOriginal &&
+                                    gridRowOriginal.isParent !== true
+                                ) {
+                                    const parentIdOfChildRow =
+                                        gridRowOriginal[parentIdAttribute];
+                                    const rowIdAttribute =
+                                        gridRowOriginal[idAttribute];
+                                    if (
+                                        parentIdOfChildRow !== null &&
+                                        parentIdOfChildRow !== undefined &&
+                                        rowParentIdAttribute ===
+                                            parentIdOfChildRow
+                                    ) {
+                                        isChildRowsAvailable = true;
+                                        if (
+                                            !userSelectedRowIdentifiers.includes(
+                                                rowIdAttribute
+                                            )
+                                        ) {
+                                            isAtleastOneChildUnselected = true;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        returnValue =
+                            isChildRowsAvailable &&
+                            !isAtleastOneChildUnselected;
+                    }
+                }
+            }
+        }
+        return returnValue;
+    };
+
+    const toggleParentRowSelection = (event, row) => {
+        let selectionType = true;
+        const { checked } = event.currentTarget;
+        if (checked === false) {
+            selectionType = false;
+        }
+        if (row && parentIdAttribute && idAttribute) {
+            const { original } = row;
+            if (original) {
+                const { isParent } = original;
+                if (isParent === true) {
+                    const rowParentIdAttribute = original[parentIdAttribute];
+                    if (
+                        rowParentIdAttribute !== null &&
+                        rowParentIdAttribute !== undefined
+                    ) {
+                        preFilteredRows.forEach((gridRow) => {
+                            if (gridRow) {
+                                const gridRowOriginal = gridRow.original;
+                                if (
+                                    gridRowOriginal &&
+                                    gridRowOriginal.isParent !== true
+                                ) {
+                                    if (
+                                        gridRowOriginal[parentIdAttribute] ===
+                                        rowParentIdAttribute
+                                    ) {
+                                        const { id } = gridRow;
+                                        setIsRowSelectionCallbackNeeded(
+                                            selectionType
+                                                ? "select"
+                                                : "deselect"
+                                        );
+                                        toggleRowSelected(id, selectionType);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    };
+
+    const isLoadMoreChildRowsRequiredForRow = (index, lastPage) => {
+        let isLoadMoreChildNeeded = false;
+        if (isParentGrid && lastPage === false) {
+            if (index === rows.length - 1) {
+                isLoadMoreChildNeeded = true;
+            } else {
+                const nextRow = rows[index + 1];
+                if (nextRow) {
+                    isLoadMoreChildNeeded =
+                        nextRow &&
+                        nextRow.original &&
+                        nextRow.original.isParent === true;
+                }
+            }
+        }
+        return isLoadMoreChildNeeded;
+    };
 
     if (!isFirstRendering && gridColumns && gridColumns.length > 0) {
         // Check if atleast 1 column has group sort option enabled, and display group sort icon only if there is atleast 1.
@@ -671,47 +842,52 @@ const Customgrid = (props) => {
         // Infinite loader used for lazy loading, with the properties passed here and other values calculated at the top
         // React window list is used for implementing virtualization, specifying the item count in a frame and height of each rows in it.
         return (
-            <div
-                className="table-wrapper"
-                style={{ width: gridWidth || "100%" }}
-            >
-                <div className="neo-grid-header">
-                    <div className="neo-grid-header__results">
+            <div className="neo-grid__wrapper">
+                <div
+                    className={`neo-grid__header ${
+                        gridHeader === false
+                            ? "neo-grid__header--borderless"
+                            : ""
+                    }`}
+                >
+                    <div className="ng-header-results">
                         {gridHeader === false && multiRowSelection !== false ? (
-                            <div className="form-check">
+                            <div className="neo-form-check ng-header-results__check">
                                 <input
                                     type="checkbox"
                                     data-testid="rowSelector-allRows-fromHeaderTitle"
-                                    className="form-check-input custom-checkbox form-check-input"
+                                    className="neo-checkbox form-check-input"
                                     checked={isAllRowsSelected()}
                                     onChange={toggleAllRowsSelection}
                                 />
                             </div>
                         ) : null}
-                        <strong>
+                        <span className="ng-header-results__count">
                             {totalRecordsCount > 0 &&
                             rows.length === gridData.length
                                 ? totalRecordsCount
-                                : rows.length}
-                        </strong>
-                        <span>{title || "Rows"}</span>
+                                : findAllChildRows(rows).length}
+                        </span>
+                        <span className="ng-header-results__title">
+                            {title || "Rows"}
+                        </span>
                     </div>
                     {CustomPanel ? (
-                        <div className="neo-grid-header__customPanel">
+                        <div className="neo-grid__customPanel">
                             <CustomPanel />
                         </div>
                     ) : null}
-                    <div className="neo-grid-header__utilities">
+                    <div className="ng-header-utils">
                         {globalSearch !== false ? (
                             <GlobalFilter
                                 globalFilter={globalFilter}
                                 setGlobalFilter={setGlobalFilter}
                             />
                         ) : null}
-                        {columnFilter !== false ? (
-                            <div className="utilities-icon-container keyword-search-container">
+                        {gridHeader !== false && columnFilter !== false ? (
+                            <div className="ng-header-utils__items keyword-search-container">
                                 <div
-                                    className="utilities-icon keyword-search"
+                                    className="ng-header-utils__icons keyword-search"
                                     role="presentation"
                                     data-testid="toggleColumnFilter"
                                     onClick={toggleColumnFilter}
@@ -723,9 +899,9 @@ const Customgrid = (props) => {
                             </div>
                         ) : null}
                         {isGroupSortNeeded !== false && groupSort !== false ? (
-                            <div className="utilities-icon-container group-sort-container">
+                            <div className="ng-header-utils__items group-sort-container">
                                 <div
-                                    className="utilities-icon group-sort"
+                                    className="ng-header-utils__icons group-sort"
                                     role="presentation"
                                     data-testid="toggleGroupSortOverLay"
                                     onClick={toggleGroupSortOverLay}
@@ -734,22 +910,22 @@ const Customgrid = (props) => {
                                         <IconGroupSort />
                                     </i>
                                 </div>
-                                <GroupSort
-                                    isGroupSortOverLayOpen={
-                                        isGroupSortOverLayOpen
-                                    }
-                                    toggleGroupSortOverLay={
-                                        toggleGroupSortOverLay
-                                    }
-                                    gridColumns={managableColumns}
-                                    applyGroupSort={applyGroupSort}
-                                />
+                                {isGroupSortOverLayOpen ? (
+                                    <GroupSort
+                                        toggleGroupSortOverLay={
+                                            toggleGroupSortOverLay
+                                        }
+                                        groupSortOptions={groupSortOptions}
+                                        gridColumns={managableColumns}
+                                        applyGroupSort={applyGroupSort}
+                                    />
+                                ) : null}
                             </div>
                         ) : null}
                         {columnChooser !== false ? (
-                            <div className="utilities-icon-container manage-columns-container">
+                            <div className="ng-header-utils__items">
                                 <div
-                                    className="utilities-icon manage-columns"
+                                    className="ng-header-utils__icons"
                                     role="presentation"
                                     data-testid="toggleManageColumnsOverlay"
                                     onClick={toggleManageColumnsOverlay}
@@ -758,25 +934,28 @@ const Customgrid = (props) => {
                                         <IconColumns />
                                     </i>
                                 </div>
-                                <ColumnReordering
-                                    isManageColumnOverlayOpen={
-                                        isManageColumnOverlayOpen
-                                    }
-                                    toggleManageColumnsOverlay={
-                                        toggleManageColumnsOverlay
-                                    }
-                                    columns={managableColumns}
-                                    additionalColumn={expandedRowData}
-                                    updateColumnStructure={
-                                        updateColumnStructure
-                                    }
-                                />
+                                {isManageColumnOverlayOpen ? (
+                                    <ColumnReordering
+                                        toggleManageColumnsOverlay={
+                                            toggleManageColumnsOverlay
+                                        }
+                                        columns={gridColumns}
+                                        originalColumns={managableColumns}
+                                        additionalColumn={additionalColumn}
+                                        originalAdditionalColumn={
+                                            expandedRowData
+                                        }
+                                        updateColumnStructure={
+                                            updateColumnStructure
+                                        }
+                                    />
+                                ) : null}
                             </div>
                         ) : null}
                         {exportData !== false ? (
-                            <div className="utilities-icon-container manage-columns-container">
+                            <div className="ng-header-utils__items">
                                 <div
-                                    className="utilities-icon export-data"
+                                    className="ng-header-utils__icons export-data"
                                     role="presentation"
                                     data-testid="toggleExportDataOverlay"
                                     onClick={toggleExportDataOverlay}
@@ -785,23 +964,23 @@ const Customgrid = (props) => {
                                         <IconShare />
                                     </i>
                                 </div>
-                                <ExportData
-                                    isExportOverlayOpen={isExportOverlayOpen}
-                                    toggleExportDataOverlay={
-                                        toggleExportDataOverlay
-                                    }
-                                    rows={rows}
-                                    columns={JSON.parse(
-                                        JSON.stringify(gridColumns)
-                                    )}
-                                    additionalColumn={additionalColumn}
-                                />
+                                {isExportOverlayOpen ? (
+                                    <ExportData
+                                        toggleExportDataOverlay={
+                                            toggleExportDataOverlay
+                                        }
+                                        rows={rows}
+                                        columns={gridColumns}
+                                        additionalColumn={additionalColumn}
+                                        fileName={fileName}
+                                    />
+                                ) : null}
                             </div>
                         ) : null}
                         {typeof onGridRefresh === "function" ? (
-                            <div className="utilities-icon-container refresh-data-container">
+                            <div className="ng-header-utils__items">
                                 <div
-                                    className="utilities-icon refresh-data"
+                                    className="ng-header-utils__icons"
                                     role="presentation"
                                     data-testid="refreshGrid"
                                     onClick={onGridRefresh}
@@ -815,46 +994,22 @@ const Customgrid = (props) => {
                     </div>
                 </div>
 
-                <div className="table-popus">
-                    {isRowEditOverlyOpen ? (
-                        <div className="overlay">
-                            <RowEditOverlay
-                                row={editedRowData}
-                                columns={gridColumns}
-                                additionalColumn={additionalColumn}
-                                getRowEditOverlay={getRowEditOverlay}
-                                closeRowEditOverlay={closeRowEditOverlay}
-                                updateRowInGrid={updateRowInGrid}
-                            />
-                        </div>
-                    ) : null}
-                    {isRowDeleteOverlyOpen ? (
-                        <div className="overlay">
-                            <RowDeleteOverLay
-                                row={deletedRowData}
-                                closeRowDeleteOverlay={closeRowDeleteOverlay}
-                                deleteRowFromGrid={deleteRowFromGrid}
-                            />
-                        </div>
-                    ) : null}
-                </div>
-
                 <div
-                    className="tableContainer table-outer neo-grid"
+                    className="neo-grid__table"
                     style={{
                         height: gridHeight || "50vh",
                         overflowX: "auto",
                         overflowY: "hidden"
                     }}
                 >
-                    <AutoSizer
-                        disableWidth
-                        className="tableContainer__AutoSizer"
-                    >
+                    <AutoSizer disableWidth className="neo-grid__autosizer">
                         {({ height }) => (
-                            <div {...getTableProps()} className="table">
+                            <div
+                                {...getTableProps()}
+                                className="neo-grid__content"
+                            >
                                 {gridHeader === false ? null : (
-                                    <div className="thead table-row table-row--head">
+                                    <div className="neo-grid__thead">
                                         {headerGroups.map(
                                             (headerGroup, index) => {
                                                 // If there are morthan 1 headerGroups, we consider 1st one as group header row
@@ -865,7 +1020,7 @@ const Customgrid = (props) => {
                                                 return (
                                                     <div
                                                         {...headerGroup.getHeaderGroupProps()}
-                                                        className="tr"
+                                                        className="neo-grid__tr"
                                                     >
                                                         {headerGroup.headers.map(
                                                             (column) => {
@@ -887,10 +1042,10 @@ const Customgrid = (props) => {
                                                                     return (
                                                                         <div
                                                                             {...column.getHeaderProps()}
-                                                                            className={`table-cell column-heading th ${
+                                                                            className={`neo-grid__th ${
                                                                                 isGroupHeader ===
                                                                                 true
-                                                                                    ? "group-column-heading"
+                                                                                    ? "neo-grid__th-group"
                                                                                     : ""
                                                                             }`}
                                                                             data-testid={
@@ -901,7 +1056,7 @@ const Customgrid = (props) => {
                                                                             }
                                                                         >
                                                                             <div
-                                                                                className="column-heading-title"
+                                                                                className="neo-grid__th-title"
                                                                                 data-testid="column-header-sort"
                                                                                 {...column.getSortByToggleProps()}
                                                                             >
@@ -912,12 +1067,12 @@ const Customgrid = (props) => {
                                                                                 false ? (
                                                                                     <span>
                                                                                         {isSorted ? (
-                                                                                            <i>
+                                                                                            <i className="neo-grid__th-icon">
                                                                                                 <IconSort
                                                                                                     className={
                                                                                                         isSortedDesc
-                                                                                                            ? "sort-asc"
-                                                                                                            : "sort-desc"
+                                                                                                            ? "neo-grid__sort-asc"
+                                                                                                            : "neo-grid__sort-desc"
                                                                                                     }
                                                                                                 />
                                                                                             </i>
@@ -927,12 +1082,16 @@ const Customgrid = (props) => {
                                                                                     </span>
                                                                                 ) : null}
                                                                             </div>
+                                                                            {/* Don't render filter if header is group header or if column filter is disabled */}
+                                                                            {/* If atleast 1 column filter is present, below div wrap has to be present, to maintain the alignment of header text in header cell */}
                                                                             {isGroupHeader ===
-                                                                            false ? (
+                                                                                false &&
+                                                                            columnFilter !==
+                                                                                false ? (
                                                                                 <div
-                                                                                    className={`txt-wrap column-filter ${
+                                                                                    className={`ng-txt-wrap ${
                                                                                         isFilterOpen
-                                                                                            ? "open"
+                                                                                            ? "ng-txt-wrap__open"
                                                                                             : ""
                                                                                     }`}
                                                                                 >
@@ -951,7 +1110,7 @@ const Customgrid = (props) => {
                                                                                 false &&
                                                                                 canResize && (
                                                                                     <div
-                                                                                        className="resizer"
+                                                                                        className="neo-grid__th-resizer"
                                                                                         {...column.getResizerProps()}
                                                                                     />
                                                                                 )}
@@ -967,50 +1126,145 @@ const Customgrid = (props) => {
                                         )}
                                     </div>
                                 )}
-                                <div {...getTableBodyProps()} className="tbody">
-                                    <InfiniteLoader
-                                        isItemLoaded={isItemLoaded}
-                                        itemCount={itemCount}
-                                        loadMoreItems={loadMoreItems}
-                                        className="tableContainer__InfiniteLoader"
+                                {rows && rows.length > 0 ? (
+                                    <div
+                                        {...getTableBodyProps()}
+                                        className={`neo-grid__tbody ${
+                                            gridHeader === false
+                                                ? "neo-grid__tbody--nohead"
+                                                : ""
+                                        }`}
                                     >
-                                        {({ onItemsRendered, ref }) => (
-                                            <List
-                                                ref={(list) => {
-                                                    ref(list);
-                                                    listRef.current = list;
-                                                }}
-                                                style={{ overflowX: "hidden" }}
-                                                height={height - 60}
-                                                itemCount={rows.length}
-                                                itemSize={(index) => {
-                                                    return (
-                                                        calculateRowHeight(
-                                                            rows[index],
-                                                            headerGroups &&
-                                                                headerGroups.length
-                                                                ? headerGroups[
-                                                                      headerGroups.length -
-                                                                          1
-                                                                  ].headers
-                                                                : []
-                                                        ) +
-                                                        (theme === "portal"
-                                                            ? 10
-                                                            : 0)
-                                                    );
-                                                }}
-                                                onItemsRendered={
-                                                    onItemsRendered
-                                                }
-                                                overscanCount={overScanCount}
-                                                className="tableContainer__List"
+                                        {isPaginationNeeded ? (
+                                            <InfiniteLoader
+                                                isItemLoaded={isItemLoaded}
+                                                itemCount={itemCount}
+                                                loadMoreItems={loadMoreItems}
                                             >
-                                                {RenderRow}
-                                            </List>
+                                                {({ onItemsRendered, ref }) => (
+                                                    <RowsList
+                                                        onItemsRendered={
+                                                            onItemsRendered
+                                                        }
+                                                        infiniteLoaderRef={ref}
+                                                        listRef={listRef}
+                                                        height={height}
+                                                        theme={theme}
+                                                        rows={rows}
+                                                        overScanCount={
+                                                            overScanCount
+                                                        }
+                                                        prepareRow={prepareRow}
+                                                        isParentGrid={
+                                                            isParentGrid
+                                                        }
+                                                        multiRowSelection={
+                                                            multiRowSelection
+                                                        }
+                                                        parentRowExpandable={
+                                                            parentRowExpandable
+                                                        }
+                                                        isRowExpandEnabled={
+                                                            isRowExpandEnabled
+                                                        }
+                                                        isParentRowSelected={
+                                                            isParentRowSelected
+                                                        }
+                                                        isParentRowCollapsed={
+                                                            isParentRowCollapsed
+                                                        }
+                                                        toggleParentRowSelection={
+                                                            toggleParentRowSelection
+                                                        }
+                                                        toggleParentRow={
+                                                            toggleParentRow
+                                                        }
+                                                        isParentRowOpen={
+                                                            isParentRowOpen
+                                                        }
+                                                        isLoadMoreChildRowsRequiredForRow={
+                                                            isLoadMoreChildRowsRequiredForRow
+                                                        }
+                                                        loadMoreChildData={
+                                                            loadMoreChildData
+                                                        }
+                                                        parentColumn={
+                                                            parentColumn
+                                                        }
+                                                        additionalColumn={
+                                                            additionalColumn
+                                                        }
+                                                        getRowInfo={getRowInfo}
+                                                        expandedParentRows={
+                                                            expandedParentRows
+                                                        }
+                                                        reRenderListData={
+                                                            reRenderListData
+                                                        }
+                                                    />
+                                                )}
+                                            </InfiniteLoader>
+                                        ) : (
+                                            <RowsList
+                                                listRef={listRef}
+                                                height={height}
+                                                theme={theme}
+                                                rows={rows}
+                                                overScanCount={overScanCount}
+                                                prepareRow={prepareRow}
+                                                isParentGrid={isParentGrid}
+                                                multiRowSelection={
+                                                    multiRowSelection
+                                                }
+                                                parentRowExpandable={
+                                                    parentRowExpandable
+                                                }
+                                                isRowExpandEnabled={
+                                                    isRowExpandEnabled
+                                                }
+                                                isParentRowSelected={
+                                                    isParentRowSelected
+                                                }
+                                                isParentRowCollapsed={
+                                                    isParentRowCollapsed
+                                                }
+                                                toggleParentRowSelection={
+                                                    toggleParentRowSelection
+                                                }
+                                                toggleParentRow={
+                                                    toggleParentRow
+                                                }
+                                                isParentRowOpen={
+                                                    isParentRowOpen
+                                                }
+                                                isLoadMoreChildRowsRequiredForRow={
+                                                    isLoadMoreChildRowsRequiredForRow
+                                                }
+                                                loadMoreChildData={
+                                                    loadMoreChildData
+                                                }
+                                                parentColumn={parentColumn}
+                                                additionalColumn={
+                                                    additionalColumn
+                                                }
+                                                getRowInfo={getRowInfo}
+                                                expandedParentRows={
+                                                    expandedParentRows
+                                                }
+                                                reRenderListData={
+                                                    reRenderListData
+                                                }
+                                            />
                                         )}
-                                    </InfiniteLoader>
-                                </div>
+                                    </div>
+                                ) : (
+                                    <h2
+                                        data-testid="nodataerror"
+                                        className="ng-error"
+                                    >
+                                        No Records Found
+                                    </h2>
+                                )}
                             </div>
                         )}
                     </AutoSizer>
@@ -1022,33 +1276,36 @@ const Customgrid = (props) => {
 };
 
 Customgrid.propTypes = {
-    theme: PropTypes.string,
+    isDesktop: PropTypes.bool,
     title: PropTypes.string,
     gridHeight: PropTypes.string,
-    gridWidth: PropTypes.string,
+    theme: PropTypes.string,
     managableColumns: PropTypes.arrayOf(PropTypes.object),
+    parentColumn: PropTypes.object,
+    parentIdAttribute: PropTypes.string,
+    parentRowExpandable: PropTypes.bool,
+    parentRowsToExpand: PropTypes.array,
+    loadChildData: PropTypes.func,
+    isParentGrid: PropTypes.bool,
     gridData: PropTypes.arrayOf(PropTypes.object),
     rowsToOverscan: PropTypes.number,
     idAttribute: PropTypes.string,
+    isPaginationNeeded: PropTypes.bool,
     totalRecordsCount: PropTypes.number,
-    getRowEditOverlay: PropTypes.func,
-    updateRowInGrid: PropTypes.func,
-    deleteRowFromGrid: PropTypes.func,
     searchColumn: PropTypes.func,
     onRowSelect: PropTypes.func,
     getRowInfo: PropTypes.func,
-    calculateRowHeight: PropTypes.func,
     expandableColumn: PropTypes.bool,
     isExpandContentAvailable: PropTypes.bool,
     hasNextPage: PropTypes.bool,
     isNextPageLoading: PropTypes.bool,
     loadNextPage: PropTypes.func,
+    serverSideSorting: PropTypes.func,
     getSortedData: PropTypes.func,
     getToggleAllRowsSelectedProps: PropTypes.func,
     row: PropTypes.arrayOf(PropTypes.object),
     expandedRowData: PropTypes.object,
-    rowActions: PropTypes.arrayOf(PropTypes.object),
-    rowActionCallback: PropTypes.func,
+    rowActions: PropTypes.any,
     CustomPanel: PropTypes.any,
     multiRowSelection: PropTypes.bool,
     gridHeader: PropTypes.bool,
@@ -1058,6 +1315,7 @@ Customgrid.propTypes = {
     groupSort: PropTypes.bool,
     columnChooser: PropTypes.bool,
     exportData: PropTypes.bool,
+    fileName: PropTypes.string,
     onGridRefresh: PropTypes.func,
     rowsToSelect: PropTypes.array,
     rowsToDeselect: PropTypes.array

@@ -1,27 +1,28 @@
 /*  Root style
 *  ------------------------------------------------------ */
 :root {
-    --default: #004164;
-    --default_hover: #28465b;
-    --primary: #00b4b4;
-    --primary-light: #e5f7f7;
-    --tertiary: #4ccaca;
-    --border-green: #99e1e1;
-    --titlecolor: #004164;
-    --light-grey: #e5ecef;
-    --border-light: #d9e3e8;
-    --box-shadow: #d9e3e8;
-    --border: #bfcfd8;
-    --border-grey: #b2c6d0;
-    --border-default: #99b3c1;
-    --reserved: #7fa0b1;
-    --dark-grey: #4c7a92;
-    --text-light: #40718b;
-    --placeholder: #195473;
-    --textcolor: #195473;
-    --icon-primary: #8f9eab;
-    --icon-secondary: #9bb1bf;
+    --default: #004164; /* rgba(0, 65, 100) */
+    --default_hover: #28465b; /* rgba(40, 70, 91) */
+    --primary: #00b4b4; /* rgba(0, 180, 180) */
+    --primary-light: #e5f7f7; /* rgba(0, 180, 180, 0.1) */
+    --tertiary: #4ccaca; /* rgba(0, 180, 180, 0.7) */
+    --border-green: #99e1e1; /*rgba(0, 180, 180, 0.4) */
+    --titlecolor: #004164; /*rgba(0, 65, 100); */
+    --light-grey: #e5ecef; /*rgba(0, 65, 100, 0.1); */
+    --border-light: #d9e3e8; /*rgba(0, 65, 100, 0.15); */
+    --box-shadow: #d9e3e8; /*rgba(0, 65, 100, 0.15); */
+    --border: #bfcfd8; /*rgba(0, 65, 100, 0.25); */
+    --border-grey: #b2c6d0; /*rgba(0, 65, 100, 0.3); */
+    --border-default: #99b3c1; /*rgba(0, 65, 100, 0.4); */
+    --reserved: #7fa0b1; /*rgba(0, 65, 100, 0.5); */
+    --dark-grey: #4c7a92; /*rgba(0, 65, 100, 0.7); */
+    --text-light: #40718b; /*rgba(0, 65, 100, 0.75); */
+    --placeholder: #195473; /*rgba(0, 65, 100, 0.9); */
+    --textcolor: #195473; /*rgba(0, 65, 100, 0.9); */
+    --icon-primary: #8f9eab; /*rgb(143, 158, 171); */
+    --icon-secondary: #9bb1bf; /*rgb(155, 177, 191); */
     --primary_hover: #06808d;
+    --light_hover: #f1f4f7;
     --secondary: #f7fafc;
     --linkcolor: #00b4b4;
     --info: #11cdef;
@@ -61,21 +62,22 @@
 
 /*  Checkbox Styles
 *  ------------------------------------------------------ */
-.form-check {
-    height: 30px;
+.neo-form-check {
     padding: 0;
-    display: flex;
-    align-items: center;
-}
-.form-check .form-check-input {
-    margin-top: 0;
-    margin-left: 0;
-    margin-right: 8px;
-}
-.form-check.form-check-inline {
     display: inline-flex;
+    align-items: center;
+    height: 1.5rem;
 }
-input[type="checkbox"].custom-checkbox.custom-checkbox {
+.neo-form-check.form-check-inline {
+    display: inline-flex;
+    cursor: pointer;
+}
+.neo-form-check__label {
+    margin: 0;
+    padding-left: 0.5rem;
+    cursor: pointer;
+}
+input[type="checkbox"].neo-checkbox {
     -webkit-appearance: initial;
     appearance: initial;
     width: 16px;
@@ -88,11 +90,12 @@ input[type="checkbox"].custom-checkbox.custom-checkbox {
     outline: none;
     background: #fff;
     border-color: #c3c3c3;
+    margin: 0 !important;
 }
-input[type="checkbox"].custom-checkbox.custom-checkbox:focus {
-    border-color: #00aaad;
+input[type="checkbox"].neo-checkbox:focus {
+    border-color: var(--primary);
 }
-input[type="checkbox"].custom-checkbox:checked:after {
+input[type="checkbox"].neo-checkbox:checked:after {
     content: "\2713";
     position: absolute;
     left: 50%;
@@ -101,23 +104,23 @@ input[type="checkbox"].custom-checkbox:checked:after {
     -moz-transform: translate(-50%, -50%);
     -ms-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
-    color: #fff;
+    color: var(--white);
     cursor: pointer;
 }
-input[type="checkbox"].custom-checkbox:checked {
-    background: #00aaad;
+input[type="checkbox"].neo-checkbox:checked {
+    background: var(--primary);
     -webkit-transition: all 0.35s ease;
     transition: all 0.3s ease;
 }
-input[type="checkbox"].custom-checkbox:checked:after {
-    color: #fff;
+input[type="checkbox"].neo-checkbox:checked:after {
+    color: var(--white);
 }
 .form-check-inline .form-check-input {
     position: relative;
 }
-input[type="checkbox"].custom-checkbox:checked {
-    border: 1px solid #00aaad !important;
-    box-shadow: 0px 0px 1px 2px rgba(96, 151, 153, 0.1);
+input[type="checkbox"].neo-checkbox:checked {
+    border: 1px solid var(--primary) !important;
+    box-shadow: 0px 0px 1px 2px var(--primary-light);
 }
 
 /*  Global Styles
@@ -446,6 +449,7 @@ htm,
 body {
     margin: 0 !important;
     padding: 0 !important;
+    font-family: "sans-serif", Arial, Segoe UI, serif;
 }
 ul,
 li {
@@ -456,6 +460,12 @@ li {
 
 /*  Application Styles
 *  ------------------------------------------------------ */
+.flightHeader {
+    color: var(--focus);
+}
+.flightIcon {
+    margin: 0 5px;
+}
 .travelId-details,
 .flight-details,
 .segment-details,
@@ -575,19 +585,124 @@ li {
 .remarks-edit {
     margin: 0 10px;
 }
-
-.table-cell--content-edit input,
-.table-cell--content-edit select {
+.neo-grid__content-edit input,
+.neo-grid__content-edit select {
     display: inline-block;
     height: 30px;
-    width: 120px;
+    width: 130px;
     border-radius: 3px;
     border: var(--light-grey) solid 1px;
     padding: 2px;
     font-size: 12px;
     margin-right: 5px;
 }
-
+.parentRow {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+}
+.parentRow .parentRowHead {
+    font-weight: 700;
+    font-style: normal;
+    font-size: 14px;
+    color: #199ed8;
+    margin: 0;
+}
+.parentRow .parentRowInfo .parentRowInfoType {
+    font-weight: 400;
+    font-style: normal;
+    font-size: 12px;
+    color: rgba(0, 65, 100, 0.8);
+    text-align: right;
+    line-height: 20px;
+    margin-right: 15px;
+}
+/* Edit Overlay */
+.overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+}
+.overlay .row-option-action-overlay {
+    background-color: #fff;
+    width: 890px;
+    box-shadow: 0px 0px 7px -1px rgba(0, 0, 0, 0.3);
+    padding: 20px 20px 20px 20px;
+    z-index: 99;
+    position: absolute;
+}
+.overlay .row-option-action-overlay.delete {
+    width: auto;
+    height: auto;
+    padding: 50px;
+}
+.overlay .row-option-action-overlay label {
+    margin-bottom: 5px;
+    display: block;
+}
+.overlay .row-option-action-overlay input,
+.overlay .row-option-action-overlay select,
+.overlay .row-option-action-overlay textarea {
+    width: 100%;
+    border-radius: 2px;
+    border: #d3d3d3 solid 1px;
+    font-size: 12px;
+    padding: 5px;
+}
+.overlay .row-option-action-overlay select {
+    margin: 0 0 10px;
+}
+.overlay .row-option-action-overlay .btn-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0;
+}
+/* Row Options */
+.ng-action__popover li {
+    margin-bottom: 13px;
+    cursor: pointer;
+}
+.ng-action__popover li:last-child {
+    margin: 0;
+}
+.ng-action__popover li i {
+    width: 14px;
+    display: inline-block;
+}
+.ng-action__popover li i.default {
+    position: relative;
+}
+.ng-action__popover li i.default:before {
+    background-color: var(--default);
+    width: 6px;
+    height: 6px;
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    top: -6px;
+    left: 2px;
+}
+.ng-action__popover li span {
+    margin-left: 8px;
+    padding-right: 5px;
+}
+.ng-action__popover .close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 15px;
+    color: #ccc;
+    cursor: pointer;
+}
 /*  CustomPanel Styles
 *  ------------------------------------------------------ */
 .dropbtn {
@@ -647,6 +762,6 @@ li {
 
 /*  CUstom class style
 *  ------------------------------------------------------ */
-.icargoCustomClass .neo-grid-header .neo-grid-header__results {
+.icargoCustomClass .ng-header-results {
     color: #3171b2;
 }

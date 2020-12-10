@@ -29,18 +29,19 @@ const ColumnSearch = ({
         return allCoulmns;
     };
 
-    const [searchableColumns, setSearchableColumns] = useState(
-        getAllColumns(gridColumns, additionalColumn)
-    );
+    const [searchableColumns, setSearchableColumns] = useState([]);
 
     // Update searched columns state based on the searched value
     const onColumnSearch = (event) => {
-        let { value } = event ? event.target : "";
+        let { value } = event.target;
         value = value ? value.toLowerCase() : "";
         const allColumns = getAllColumns(gridColumns, additionalColumn);
         if (value !== "") {
             setSearchableColumns(
                 allColumns.filter((column) => {
+                    if (column.title) {
+                        return column.title.toLowerCase().includes(value);
+                    }
                     return column.Header.toLowerCase().includes(value);
                 })
             );
@@ -70,12 +71,10 @@ const ColumnSearch = ({
 
     // update the display flag value of column or all columns in managedColumns state, based on the selection
     const onSearchableColumnChange = (event) => {
-        if (event && event.currentTarget) {
-            const { checked, dataset } = event.currentTarget;
-            if (dataset) {
-                const { columnid, isadditionalcolumn } = dataset;
-                updateColumns(columnid, isadditionalcolumn, checked);
-            }
+        const { checked, dataset } = event.currentTarget;
+        if (dataset) {
+            const { columnid, isadditionalcolumn } = dataset;
+            updateColumns(columnid, isadditionalcolumn, checked);
         }
     };
 
@@ -85,69 +84,81 @@ const ColumnSearch = ({
                 $set: getAllColumns(gridColumns, additionalColumn)
             })
         );
-    }, [columns, additionalColumn]);
+    }, []);
+
+    const isSearchableColumnsAvailable =
+        searchableColumns && searchableColumns.length > 0;
 
     return (
-        <div className="columnSearch column__body">
+        <div className="ng-chooser-body">
             <input
                 type="text"
                 placeholder="Search column"
-                className="custom__ctrl"
+                className="ng-chooser-body__txt"
                 data-testid="filterColumnsList"
                 onChange={onColumnSearch}
             />
-            <div className="column__selectAll">
-                <div className="column__checkbox">
-                    <div className="form-check">
-                        <input
-                            type="checkbox"
-                            id="chk_selectAllSearchableColumns"
-                            className="form-check-input custom-checkbox form-check-input"
-                            data-testid="selectAllSearchableColumns"
-                            data-columnid="all"
-                            checked={isSearchableColumnSelected("all")}
-                            onChange={onSearchableColumnChange}
-                        />
-                        <label
-                            htmlFor="chk_selectAllSearchableColumns"
-                            className="form-check-label column__selectTxt"
-                        >
-                            Select All
-                        </label>
-                    </div>
-                </div>
-            </div>
-            {searchableColumns.map((column) => {
-                const { columnId, Header, isDisplayInExpandedRegion } = column;
-                return (
-                    <div className="column__wrap" key={columnId}>
-                        <div className="column__checkbox">
-                            <div className="form-check">
-                                <input
-                                    type="checkbox"
-                                    id={`chk_selectSearchableColumn_${columnId}`}
-                                    className="form-check-input custom-checkbox form-check-input"
-                                    data-testid={`selectSingleSearchableColumn_${columnId}`}
-                                    data-columnid={columnId}
-                                    data-isadditionalcolumn={
-                                        isDisplayInExpandedRegion
-                                    }
-                                    checked={isSearchableColumnSelected(
-                                        columnId
-                                    )}
-                                    onChange={onSearchableColumnChange}
-                                />
-                                <label
-                                    htmlFor={`chk_selectSearchableColumn_${columnId}`}
-                                    className="form-check-label column__txt"
-                                >
-                                    {Header}
-                                </label>
-                            </div>
+            {isSearchableColumnsAvailable ? (
+                <div className="ng-chooser-body__selectall">
+                    <div className="ng-chooser-body__checkbox">
+                        <div className="neo-form-check">
+                            <input
+                                type="checkbox"
+                                id="chk_selectAllSearchableColumns"
+                                className="neo-checkbox form-check-input"
+                                data-testid="selectAllSearchableColumns"
+                                data-columnid="all"
+                                checked={isSearchableColumnSelected("all")}
+                                onChange={onSearchableColumnChange}
+                            />
+                            <label
+                                htmlFor="chk_selectAllSearchableColumns"
+                                className="neo-form-check__label"
+                            >
+                                Select All
+                            </label>
                         </div>
                     </div>
-                );
-            })}
+                </div>
+            ) : null}
+            {isSearchableColumnsAvailable
+                ? searchableColumns.map((column) => {
+                      const {
+                          columnId,
+                          Header,
+                          title,
+                          isDisplayInExpandedRegion
+                      } = column;
+                      return (
+                          <div className="ng-chooser-body__wrap" key={columnId}>
+                              <div className="ng-chooser-body__checkwrap">
+                                  <div className="neo-form-check">
+                                      <input
+                                          type="checkbox"
+                                          id={`chk_selectSearchableColumn_${columnId}`}
+                                          className="neo-checkbox form-check-input"
+                                          data-testid="selectSingleSearchableColumn"
+                                          data-columnid={columnId}
+                                          data-isadditionalcolumn={
+                                              isDisplayInExpandedRegion
+                                          }
+                                          checked={isSearchableColumnSelected(
+                                              columnId
+                                          )}
+                                          onChange={onSearchableColumnChange}
+                                      />
+                                      <label
+                                          htmlFor={`chk_selectSearchableColumn_${columnId}`}
+                                          className="neo-form-check__label"
+                                      >
+                                          {title || Header}
+                                      </label>
+                                  </div>
+                              </div>
+                          </div>
+                      );
+                  })
+                : null}
         </div>
     );
 };

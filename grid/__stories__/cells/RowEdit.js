@@ -1,13 +1,23 @@
 import React, { useState } from "react";
 import { getValueOfDate } from "../utils/DateUtility";
+import ClickAwayListener from "react-click-away-listener";
 
 const RowEdit = ({
     rowData,
-    DisplayTag,
     airportCodeList,
-    rowUpdateCallBack
+    onRowUpdate,
+    unbindRowEditOverlay
 }) => {
     const [updatedRowData, setUpdatedRowData] = useState(rowData);
+
+    const saveRowEdit = () => {
+        onRowUpdate(rowData, updatedRowData);
+        unbindRowEditOverlay();
+    };
+
+    const closeRowEditOverlay = () => {
+        unbindRowEditOverlay();
+    };
 
     const updateRowData = (
         updatedFlightData,
@@ -35,7 +45,6 @@ const RowEdit = ({
             updatedRow.remarks = updatedRemarksData;
         }
         setUpdatedRowData(updatedRow);
-        rowUpdateCallBack(updatedRow);
     };
 
     const updateFlightnoValue = (e) => {
@@ -97,107 +106,106 @@ const RowEdit = ({
     const { flight, segment, weight, sr, remarks } = updatedRowData;
 
     return (
-        <>
+        <ClickAwayListener
+            className="row-option-action-overlay"
+            data-testid="rowEditOverlay-container"
+            onClickAway={closeRowEditOverlay}
+        >
             <div className="row-edit">
                 <div className="edit-flight">
-                    <DisplayTag columnKey="flight" cellKey="flightno">
-                        <div className="edit-flight-no">
-                            <label>FlightNo</label>
-                            <input
-                                type="text"
-                                value={flight.flightno}
-                                onChange={updateFlightnoValue}
-                            />
-                        </div>
-                    </DisplayTag>
-                    <DisplayTag columnKey="flight" cellKey="date">
-                        <div className="edit-flight-date">
-                            <label>Date</label>
-                            <input
-                                type="date"
-                                value={getValueOfDate(flight.date, "calendar")}
-                                onChange={updateDateValue}
-                            />
-                        </div>
-                    </DisplayTag>
-                </div>
-                <div className="edit-flight-segment">
-                    <DisplayTag columnKey="segment" cellKey="from">
-                        <div>
-                            <label>Segment From</label>
-                            <select
-                                value={segment.from}
-                                onChange={updateFromValue}
-                            >
-                                {airportCodeList.map((item, index) => {
-                                    return (
-                                        <option key={index} value={item}>
-                                            {item}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
-                    </DisplayTag>
-                    <DisplayTag columnKey="segment" cellKey="to">
-                        <div>
-                            <label>Segment To</label>
-                            <select value={segment.to} onChange={updateToValue}>
-                                {airportCodeList.map((item, index) => {
-                                    return (
-                                        <option key={index} value={item}>
-                                            {item}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
-                    </DisplayTag>
-                </div>
-                <div className="edit-weight">
-                    <DisplayTag columnKey="weight" cellKey="percentage">
-                        <div className="edit-weight-percentage">
-                            <label>Weight Percentage</label>
-                            <input
-                                type="text"
-                                value={weight.percentage}
-                                onChange={updateWeightPercentage}
-                            />
-                        </div>
-                    </DisplayTag>
-                    <DisplayTag columnKey="weight" cellKey="value">
-                        <div className="edit-weight-value">
-                            <label>Weight Value</label>
-                            <input
-                                type="text"
-                                value={weight.value}
-                                onChange={updateWeightValue}
-                            />
-                        </div>
-                    </DisplayTag>
-                </div>
-                <div className="edit-sr">
-                    <DisplayTag columnKey="sr" cellKey="sr">
-                        <label>SR</label>
+                    <div className="edit-flight-no">
+                        <label>FlightNo</label>
                         <input
                             type="text"
-                            value={sr}
-                            onChange={updateSrValue}
+                            value={flight.flightno}
+                            onChange={updateFlightnoValue}
                         />
-                    </DisplayTag>
+                    </div>
+                    <div className="edit-flight-date">
+                        <label>Date</label>
+                        <input
+                            type="date"
+                            value={getValueOfDate(flight.date, "calendar")}
+                            onChange={updateDateValue}
+                        />
+                    </div>
+                </div>
+                <div className="edit-flight-segment">
+                    <div>
+                        <label>Segment From</label>
+                        <select value={segment.from} onChange={updateFromValue}>
+                            {airportCodeList.map((item, index) => {
+                                return (
+                                    <option key={index} value={item}>
+                                        {item}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Segment To</label>
+                        <select value={segment.to} onChange={updateToValue}>
+                            {airportCodeList.map((item, index) => {
+                                return (
+                                    <option key={index} value={item}>
+                                        {item}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </div>
+                </div>
+                <div className="edit-weight">
+                    <div className="edit-weight-percentage">
+                        <label>Weight Percentage</label>
+                        <input
+                            type="text"
+                            value={weight.percentage}
+                            onChange={updateWeightPercentage}
+                        />
+                    </div>
+                    <div className="edit-weight-value">
+                        <label>Weight Value</label>
+                        <input
+                            type="text"
+                            value={weight.value}
+                            onChange={updateWeightValue}
+                        />
+                    </div>
+                </div>
+                <div className="edit-sr">
+                    <label>SR</label>
+                    <input type="text" value={sr} onChange={updateSrValue} />
                 </div>
             </div>
             <div className="remarks-edit">
-                <DisplayTag columnKey="remarks" cellKey="remarks">
-                    <label>Remarks</label>
-                    <textarea
-                        rows="4"
-                        value={remarks}
-                        onChange={updateRemarksValue}
-                    ></textarea>
-                </DisplayTag>
+                <label>Remarks</label>
+                <textarea
+                    rows="4"
+                    value={remarks}
+                    onChange={updateRemarksValue}
+                ></textarea>
             </div>
-        </>
+            <div className="btn-wrap">
+                <button
+                    type="button"
+                    className="neo-btn neo-btn-primary btn btn-secondary"
+                    data-testid="rowEditOverlay-save"
+                    onClick={saveRowEdit}
+                >
+                    Save
+                </button>
+                <button
+                    type="button"
+                    className="neo-btn neo-btn-default btn btn-secondary"
+                    data-testid="rowEditOverlay-cancel"
+                    onClick={closeRowEditOverlay}
+                >
+                    Cancel
+                </button>
+            </div>
+        </ClickAwayListener>
     );
 };
 

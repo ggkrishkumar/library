@@ -8,6 +8,7 @@ import GroupedColumnItem from "./groupedColumnItem";
 const ColumnItem = ({
     id,
     columnHeader,
+    columnTitle,
     moveColumn,
     findColumn,
     isadditionalcolumn,
@@ -49,23 +50,27 @@ const ColumnItem = ({
 
     return (
         <div style={{ opacity }}>
-            <div className="column__reorder">
+            <div
+                className="ng-popover--column__reorder"
+                data-testid="column-box"
+            >
                 <div
-                    data-testid="columnItem"
+                    data-testid="columnItemDnd"
                     ref={(node) => drag(drop(node))}
                     style={{ cursor: "move" }}
-                    className="column_drag"
+                    className="ng-popover--column__drag"
                 >
                     <i>
                         <IconJustify />
                     </i>
                 </div>
-                <div className="columnItem__Header">{columnHeader}</div>
+                <span>{columnTitle || columnHeader}</span>
                 {isGroupHeader === true && columns && columns.length > 0 ? (
                     columns.map((col) => {
                         const {
                             columnId,
                             Header,
+                            title,
                             display,
                             isDisplayInExpandedRegion
                         } = col;
@@ -74,6 +79,7 @@ const ColumnItem = ({
                                 key={columnId}
                                 id={columnId}
                                 Header={Header}
+                                title={title}
                                 display={display}
                                 isadditionalcolumn={isDisplayInExpandedRegion}
                                 innerCells={col.innerCells}
@@ -82,21 +88,21 @@ const ColumnItem = ({
                         );
                     })
                 ) : (
-                    <div className="column__innerCells__wrap">
+                    <div className="ng-popover--column__list">
                         {innerCells && innerCells.length > 0
                             ? innerCells.map((cell) => {
                                   const { cellId, Header, display } = cell;
                                   return (
                                       <div
-                                          className="column__wrap"
+                                          className="ng-popover--column__wrap"
                                           key={cellId}
                                       >
-                                          <div className="column__checkbox">
-                                              <div className="form-check">
+                                          <div className="ng-popover--column__check">
+                                              <div className="neo-form-check">
                                                   <input
                                                       type="checkbox"
                                                       id={`chk_selectInnerCell_${cellId}`}
-                                                      className="form-check-input custom-checkbox form-check-input"
+                                                      className="neo-checkbox form-check-input"
                                                       data-testid={`selectInnerCell_${id}_${cellId}`}
                                                       data-columnid={id}
                                                       data-cellid={cellId}
@@ -110,7 +116,7 @@ const ColumnItem = ({
                                                   />
                                                   <label
                                                       htmlFor={`chk_selectInnerCell_${cellId}`}
-                                                      className="form-check-label"
+                                                      className="neo-form-check__label"
                                                   >
                                                       {Header}
                                                   </label>
@@ -129,7 +135,8 @@ const ColumnItem = ({
 
 ColumnItem.propTypes = {
     id: PropTypes.string,
-    columnHeader: PropTypes.string,
+    columnHeader: PropTypes.any,
+    columnTitle: PropTypes.string,
     moveColumn: PropTypes.func,
     findColumn: PropTypes.func,
     isadditionalcolumn: PropTypes.bool,

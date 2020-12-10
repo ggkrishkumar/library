@@ -34,10 +34,10 @@ const SortingList = (props) => {
         <React.Fragment key="SortingListFragment">
             <div ref={drop} style={{ display: "flex", flexWrap: "wrap" }}>
                 {sortOptions && sortOptions.length > 0 ? (
-                    <ul>
-                        <li>Sort By</li>
-                        <li>Sort On</li>
-                        <li>Order</li>
+                    <ul className="ng-popover--sort__items-title">
+                        <li className="ng-popover--sort__item-text">Sort By</li>
+                        <li className="ng-popover--sort__item-text">Sort On</li>
+                        <li className="ng-popover--sort__item-text">Order</li>
                     </ul>
                 ) : null}
                 {sortOptions.map((sortOption, index) => {

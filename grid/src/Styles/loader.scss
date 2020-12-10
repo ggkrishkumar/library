@@ -1,65 +1,65 @@
-#loader {
+.ng-loader {
     display: flex;
     justify-content: center;
     margin-bottom: rem(20);
-    .dots {
+    &__dots-block {
         width: rem(380);
         padding: 20px 0 10px;
         border: #dce1e5 solid 1px;
         display: flex;
         justify-content: center;
         align-items: center;
-        span {
-            -webkit-transition: all 6000ms ease;
-            transition: all 6000ms ease;
-            background: rgba(96, 116, 136, 0.5);
-            height: 8px;
-            width: 8px;
-            margin: 0 2px 0 0;
-            display: inline-block;
-            border-radius: 50%;
-            animation: wave 2s ease infinite;
-            -webkit-animation: wave 2s ease infinite;
-            &:nth-child(1) {
-                animation-delay: 0;
-                -webkit-animation-delay: 0;
-            }
-            &:nth-child(2) {
-                animation-delay: 100ms;
-                -webkit-animation-delay: 100ms;
-            }
-            &:nth-child(3) {
-                animation-delay: 200ms;
-                -webkit-animation-delay: 200ms;
-            }
+    }
+    &__dots {
+        -webkit-transition: all 6000ms ease;
+        transition: all 6000ms ease;
+        background: rgba(96, 116, 136, 0.5);
+        height: 8px;
+        width: 8px;
+        margin: 0 2px 0 0;
+        display: inline-block;
+        border-radius: 50%;
+        animation: wave 2s ease infinite;
+        -webkit-animation: wave 2s ease infinite;
+        &:nth-child(1) {
+            animation-delay: 0;
+            -webkit-animation-delay: 0;
+        }
+        &:nth-child(2) {
+            animation-delay: 100ms;
+            -webkit-animation-delay: 100ms;
+        }
+        &:nth-child(3) {
+            animation-delay: 200ms;
+            -webkit-animation-delay: 200ms;
         }
     }
-}
-@-webkit-keyframes wave {
-    0%,
-    40%,
-    100% {
-        -webkit-transform: translate(0, 0);
-        transform: translate(0, 0);
-        background-color: rgba(96, 116, 136, 0.5);
+    @-webkit-keyframes wave {
+        0%,
+        40%,
+        100% {
+            -webkit-transform: translate(0, 0);
+            transform: translate(0, 0);
+            background-color: rgba(96, 116, 136, 0.5);
+        }
+        10% {
+            -webkit-transform: translate(0, -15px);
+            transform: translate(0, -15px);
+            background-color: rgba(96, 116, 136, 1);
+        }
     }
-    10% {
-        -webkit-transform: translate(0, -15px);
-        transform: translate(0, -15px);
-        background-color: rgba(96, 116, 136, 1);
-    }
-}
-@keyframes wave {
-    0%,
-    40%,
-    100% {
-        -webkit-transform: translate(0, 0);
-        transform: translate(0, 0);
-        background-color: rgba(96, 116, 136, 0.5);
-    }
-    10% {
-        -webkit-transform: translate(0, -15px);
-        transform: translate(0, -15px);
-        background-color: rgba(96, 116, 136, 1);
+    @keyframes wave {
+        0%,
+        40%,
+        100% {
+            -webkit-transform: translate(0, 0);
+            transform: translate(0, 0);
+            background-color: rgba(96, 116, 136, 0.5);
+        }
+        10% {
+            -webkit-transform: translate(0, -15px);
+            transform: translate(0, -15px);
+            background-color: rgba(96, 116, 136, 1);
+        }
     }
 }

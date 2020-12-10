@@ -4,8 +4,6 @@ import React from "react";
 import { render, cleanup } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import "@testing-library/jest-dom/extend-expect";
-/* eslint-disable no-unused-vars */
-import regeneratorRuntime from "regenerator-runtime";
 import Grid from "../src/index";
 
 describe("render Index file ", () => {
@@ -28,6 +26,15 @@ describe("render Index file ", () => {
             </div>
         );
     });
+
+    const getRowInfo = (rowData) => {
+        const { travelId } = rowData;
+        return {
+            isRowExpandable: travelId % 2 === 0,
+            isRowSelectable: travelId <= 5,
+            className: travelId % 10 === 0 ? "disabled" : ""
+        };
+    };
 
     const gridColumns = [
         {
@@ -173,7 +180,7 @@ describe("render Index file ", () => {
     ];
     for (let i = 1; i < 50; i++) {
         data.push({
-            travelId: i,
+            travelId: i === 3 ? null : i,
             flight: {
                 flightno: "XX6983",
                 date: "23-May-2016"
@@ -233,7 +240,6 @@ describe("render Index file ", () => {
     }
 
     const mockUpdateRowData = jest.fn();
-    const mockDeleteRowData = jest.fn();
     const mockSelectBulkData = jest.fn();
 
     let mockContainer;
@@ -250,8 +256,8 @@ describe("render Index file ", () => {
                 gridData={data}
                 idAttribute="travelId"
                 columns={gridColumns}
+                getRowInfo={getRowInfo}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
             />
         );
@@ -264,7 +270,7 @@ describe("render Index file ", () => {
         expect(rowSelectors.length).toBeGreaterThan(0);
 
         // Select first row
-        const firstRowSelector = rowSelectors[0];
+        let firstRowSelector = rowSelectors[0];
         act(() => {
             firstRowSelector.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -278,7 +284,7 @@ describe("render Index file ", () => {
 
         // Select second row
         rowSelectors = getAllByTestId("rowSelector-singleRow");
-        const secondRowSelector = rowSelectors[1];
+        let secondRowSelector = rowSelectors[1];
         act(() => {
             secondRowSelector.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -289,6 +295,34 @@ describe("render Index file ", () => {
             'input[type="checkbox"]:checked'
         );
         expect(selectedCheckboxes.length).toBe(2);
+
+        // Unselect second row
+        rowSelectors = getAllByTestId("rowSelector-singleRow");
+        secondRowSelector = rowSelectors[1];
+        act(() => {
+            secondRowSelector.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        // Selected checkbox count should be back 1 now
+        selectedCheckboxes = gridContainer.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
+        expect(selectedCheckboxes.length).toBe(1);
+
+        // Unselect first row
+        rowSelectors = getAllByTestId("rowSelector-singleRow");
+        firstRowSelector = rowSelectors[0];
+        act(() => {
+            firstRowSelector.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        // Selected checkbox count should be back 0 now
+        selectedCheckboxes = gridContainer.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
+        expect(selectedCheckboxes.length).toBe(0);
     });
 
     it("test single row selections", () => {
@@ -298,8 +332,8 @@ describe("render Index file ", () => {
                 gridData={data}
                 idAttribute="travelId"
                 columns={gridColumns}
+                getRowInfo={getRowInfo}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 multiRowSelection={false}
             />
@@ -347,8 +381,8 @@ describe("render Index file ", () => {
                 gridData={data}
                 idAttribute="travelId"
                 columns={gridColumns}
+                getRowInfo={getRowInfo}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 rowsToSelect={[0, 1, 2]}
             />
@@ -362,5 +396,54 @@ describe("render Index file ", () => {
             'input[type="checkbox"]:checked'
         );
         expect(selectedCheckboxes.length).toBe(3);
+    });
+
+    it("test single row selections for row with invalid id attribute", () => {
+        mockOffsetSize(600, 600);
+        const { container, getAllByTestId } = render(
+            <Grid
+                gridData={data}
+                idAttribute="travelId"
+                columns={gridColumns}
+                getRowInfo={getRowInfo}
+                onRowUpdate={mockUpdateRowData}
+                onRowSelect={mockSelectBulkData}
+                multiRowSelection={false}
+            />
+        );
+        const gridContainer = container;
+        // Check if grid has been loaded
+        expect(gridContainer).toBeInTheDocument();
+
+        // Find checkboxes
+        let rowSelectors = getAllByTestId("rowSelector-singleRow");
+        expect(rowSelectors.length).toBeGreaterThan(0);
+
+        // Select fourth row, where idAttribute is null
+        const firstRowSelector = rowSelectors[3];
+        act(() => {
+            firstRowSelector.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        // Checkbox will get selected, but Grid state won't be updated.
+        let selectedCheckboxes = gridContainer.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
+        expect(selectedCheckboxes.length).toBe(1);
+
+        // Select second row, where idAttribute is not null
+        rowSelectors = getAllByTestId("rowSelector-singleRow");
+        const secondRowSelector = rowSelectors[1];
+        act(() => {
+            secondRowSelector.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        // Selected checkbox count should be 2 now, as Grid is not aware of the first row selection that does not have idAttribute
+        selectedCheckboxes = gridContainer.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
+        expect(selectedCheckboxes.length).toBe(2);
     });
 });

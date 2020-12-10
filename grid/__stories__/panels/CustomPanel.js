@@ -62,7 +62,7 @@ const CustomPanel = () => {
         buttonPanelData && buttonPanelData.length > 0;
 
     return (
-        <div className="row-options-overlay">
+        <div>
             {isbuttonPanelDataPresent
                 ? buttonPanelData.map((action) => {
                       const { label, children, handleEvent } = action;

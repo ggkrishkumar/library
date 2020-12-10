@@ -11,7 +11,7 @@ const GlobalFilter = ({ globalFilter, setGlobalFilter }) => {
     }, 200);
 
     return (
-        <div className="txt-wrap neo-grid-header_globalFilter">
+        <div className="ng-txt-wrap ng-header__globalFilter">
             <input
                 type="text"
                 data-testid="globalFilter-textbox"
@@ -20,10 +20,10 @@ const GlobalFilter = ({ globalFilter, setGlobalFilter }) => {
                     setValue(e.target.value);
                     onChange(e.target.value);
                 }}
-                className="txt"
+                className="ng-txt"
                 placeholder="Search"
             />
-            <i>
+            <i className="ng-txt-wrap__icon">
                 <IconSearch />
             </i>
         </div>

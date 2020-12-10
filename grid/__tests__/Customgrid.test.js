@@ -8,14 +8,14 @@ import regeneratorRuntime from "regenerator-runtime";
 import Customgrid from "../src/Customgrid";
 
 describe("render Customgrid", () => {
-    function mockOffsetSize(width, height) {
+    function mockOffsetSize(width, height, scrollHeight) {
         Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
             configurable: true,
             value: height
         });
         Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
             configurable: true,
-            value: height + 200
+            value: scrollHeight
         });
         Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
             configurable: true,
@@ -44,7 +44,10 @@ describe("render Customgrid", () => {
             isGroupHeader: false
         },
         {
-            Header: "Flight",
+            Header: () => {
+                return <span className="flightHeader">Flight</span>;
+            },
+            title: "Flight",
             accessor: "flight",
             width: 100,
             columnId: "column_1",
@@ -99,7 +102,7 @@ describe("render Customgrid", () => {
         displayCell: (rowData, DisplayTag) => {
             const { remarks } = rowData;
             return (
-                <div className="details-wrap">
+                <div className="remarks-wrap">
                     <DisplayTag columnKey="remarks" cellKey="remarks">
                         <ul>
                             <li>{remarks}</li>
@@ -291,53 +294,10 @@ describe("render Customgrid", () => {
         });
     }
 
-    const mockRowActions = [
-        { label: "edit" },
-        { label: "delete" },
-        { label: "Send SCR", value: "SCR" },
-        { label: "Segment Summary", value: "SegmentSummary" },
-        { label: "Open Summary", value: "OpenSummary" },
-        { label: "Close Summary", value: "CloseSummary" }
-    ];
-    const mockRowActionCallback = jest.fn();
-
-    const mockGetRowEditOverlay = jest.fn(
-        (rowData, DisplayTag, rowUpdateCallBack) => {
-            const { flight } = rowData;
-            const updateRowValue = () => {
-                flight.flightno = "007";
-                rowUpdateCallBack(rowData);
-            };
-            return (
-                <div className="row-edit">
-                    <div className="edit-flight">
-                        <DisplayTag columnKey="flight" cellKey="flightno">
-                            <div className="edit-flight-no">
-                                <input
-                                    type="text"
-                                    value={flight.flightno}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                        <DisplayTag columnKey="flight" cellKey="date">
-                            <div className="edit-flight-date">
-                                <input
-                                    type="date"
-                                    value={flight.date}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                    </div>
-                </div>
-            );
-        }
-    );
-
     const mockGridHeight = "80vh";
     const mockGridWidth = "100%";
     const mockTitle = "AWBs";
+    const mockRowActions = jest.fn();
     const mockUpdateRowInGrid = jest.fn();
     const mockDeleteRowFromGrid = jest.fn();
     const mocksearchColumn = jest.fn((column, original, searchText) => {
@@ -449,9 +409,10 @@ describe("render Customgrid", () => {
     afterEach(cleanup);
 
     it("should render Customgrid", () => {
-        mockOffsetSize(600, 600);
-        const { getByText, container, getByTestId, getAllByTestId } = render(
+        mockOffsetSize(600, 600, 400);
+        const { getAllByTestId, getByTestId, container } = render(
             <Customgrid
+                isDesktop
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -459,7 +420,6 @@ describe("render Customgrid", () => {
                 expandedRowData={mockAdditionalColumn}
                 gridData={gridData}
                 idAttribute="travelId"
-                getRowEditOverlay={mockGetRowEditOverlay}
                 updateRowInGrid={mockUpdateRowInGrid}
                 deleteRowFromGrid={mockDeleteRowFromGrid}
                 searchColumn={mocksearchColumn}
@@ -468,7 +428,6 @@ describe("render Customgrid", () => {
                 isExpandContentAvailable={mockIsExpandContentAvailable}
                 displayExpandedContent={mockDisplayExpandedContent}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
                 hasNextPage={mockHasNextPage}
                 isNextPageLoading={mockIsNextPageLoading}
                 loadNextPage={mockLoadNextPage}
@@ -476,20 +435,17 @@ describe("render Customgrid", () => {
             />
         );
 
-        // Apply Sort
-        const toggleGroupSortOverLay = container.querySelector(
-            "[data-testid='toggleGroupSortOverLay']"
-        );
-
+        // Open group sort
+        const toggleGroupSortOverLay = getByTestId("toggleGroupSortOverLay");
         act(() => {
             toggleGroupSortOverLay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        let sortOverlay = container.querySelector(
-            "[class='neo-grid-popover__sort']"
-        );
-        const addNewSort = sortOverlay.querySelector("[class='sort__txt']");
+        let sortOverlay = getByTestId("groupsortoverlay");
+
+        // Add new sort
+        const addNewSort = getByTestId("addSort");
         act(() => {
             addNewSort.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -502,14 +458,12 @@ describe("render Customgrid", () => {
             );
         });
         sortOverlay = container.querySelector(
-            "[class='neo-grid-popover__sort']"
+            "[data-testid='groupsortoverlay']"
         );
         expect(sortOverlay).toBeNull();
 
         // Row Selector
-        const selectAllRowsCheckbox = container.querySelectorAll(
-            "input[type='checkbox']"
-        )[0];
+        const selectAllRowsCheckbox = getByTestId("rowSelector-allRows");
         act(() => {
             selectAllRowsCheckbox.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -517,120 +471,83 @@ describe("render Customgrid", () => {
         });
         expect(mockSelectBulkData).toBeCalledTimes(1);
 
-        // Apply column manage
-        const toggleManageColumnsOverlay = container.querySelector(
-            "[data-testid='toggleManageColumnsOverlay']"
+        // Open column manage overlay
+        const toggleManageColumnsOverlay = getByTestId(
+            "toggleManageColumnsOverlay"
         );
         act(() => {
             toggleManageColumnsOverlay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        let columnManageOverlay = container.querySelector(
-            "[class='neo-grid-popover__column column__grid']"
-        );
+
+        // Check if overlay is opened
+        let columnManageOverlay = getAllByTestId("managecolumnoverlay");
+        expect(columnManageOverlay.length).toBeGreaterThan(0);
+
+        // Apply changes
         const applyColumnManageButton = getByTestId("save_columnsManage");
         act(() => {
             applyColumnManageButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
+
+        // Check if overlay has been closed
         columnManageOverlay = container.querySelector(
-            "[class='neo-grid-popover neo-grid-popover--column columns--grid']"
+            "[data-testid='managecolumnoverlay']"
         );
         expect(columnManageOverlay).toBeNull();
 
         // Export Overlay Open-close
-        const toggleExportDataOverlay = container.querySelector(
-            "[data-testid='toggleExportDataOverlay']"
-        );
+        const toggleExportDataOverlay = getByTestId("toggleExportDataOverlay");
         act(() => {
             toggleExportDataOverlay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        let exportOverlay = container.querySelector(
-            "[class='export__settings']"
-        );
+        let exportOverlay = getByTestId("exportoverlay");
         expect(exportOverlay).toBeInTheDocument();
         act(() => {
             toggleExportDataOverlay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        exportOverlay = container.querySelector("[class='export__settings']");
+        exportOverlay = container.querySelector(
+            "[data-testid='exportoverlay']"
+        );
         expect(exportOverlay).toBeNull();
 
         // Row Options
-        const rowOptionsIcon = container.querySelector(
-            "[class=icon-row-options]"
-        ).firstChild;
-        let rowOptionsOverlay = null;
-        let rowOptionActionOverlay = null;
-        // Open row options and then open - close Row Edit Overlay
+        // Open actions overlay
+        const rowActionOpenLinks = getAllByTestId("rowActions-open-link");
         act(() => {
-            rowOptionsIcon.dispatchEvent(
+            rowActionOpenLinks[0].dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        rowOptionsOverlay = container
-            .getElementsByClassName("row-options-overlay")
-            .item(0);
-        expect(rowOptionsOverlay).toBeInTheDocument();
-        const EditLink = getByText("Edit");
+        // Check if row actions overlay has been opened
+        let rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
+        expect(rowActionsOverlay).toBeInTheDocument();
+        // Click close button
+        const closeButton = getByTestId("close-rowActions-kebab-overlay");
         act(() => {
-            EditLink.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-        rowOptionActionOverlay = container
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeInTheDocument();
-        const rowEditCancel = getByTestId("rowEditOverlay-cancel");
-        act(() => {
-            rowEditCancel.dispatchEvent(
+            closeButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        rowOptionActionOverlay = container
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeNull();
-        // Open row options and then open - close Row Delete Overlay
-        act(() => {
-            rowOptionsIcon.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        rowOptionsOverlay = container
-            .getElementsByClassName("row-options-overlay")
-            .item(0);
-        expect(rowOptionsOverlay).toBeInTheDocument();
-        const DeleteLink = getByText("Delete");
-        act(() => {
-            DeleteLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        rowOptionActionOverlay = container
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeInTheDocument();
-        const rowDeleteCancel = getByTestId("rowDeleteOverlay-cancel");
-        act(() => {
-            rowDeleteCancel.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        rowOptionActionOverlay = container
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeNull();
+        // Check if overlay has been closed
+        rowActionsOverlay = container.querySelector(
+            "[data-testid='rowActions-kebab-overlay']"
+        );
+        expect(rowActionsOverlay).toBeNull();
     });
 
     it("test global search for grid", async () => {
-        mockOffsetSize(600, 600);
-        const { container } = render(
+        mockOffsetSize(600, 600, 800);
+        const { getByTestId } = render(
             <Customgrid
+                isDesktop
                 title={mockTitle}
                 gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
@@ -638,7 +555,6 @@ describe("render Customgrid", () => {
                 expandedRowData={mockAdditionalColumn}
                 gridData={gridData}
                 idAttribute="travelId"
-                getRowEditOverlay={mockGetRowEditOverlay}
                 updateRowInGrid={mockUpdateRowInGrid}
                 deleteRowFromGrid={mockDeleteRowFromGrid}
                 searchColumn={mocksearchColumn}
@@ -647,7 +563,6 @@ describe("render Customgrid", () => {
                 isExpandContentAvailable={mockIsExpandContentAvailable}
                 displayExpandedContent={mockDisplayExpandedContent}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
                 hasNextPage={mockHasNextPage}
                 isNextPageLoading={mockIsNextPageLoading}
                 loadNextPage={mockLoadNextPage}
@@ -656,7 +571,7 @@ describe("render Customgrid", () => {
         );
 
         // Global Filter Search
-        const input = container.getElementsByClassName("txt").item(0);
+        const input = getByTestId("globalFilter-textbox");
         fireEvent.change(input, { target: { value: "1" } });
         expect(input.value).toBe("1");
         await waitFor(() => expect(mocksearchColumn).toBeCalled());

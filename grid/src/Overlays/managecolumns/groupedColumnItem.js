@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 const groupedColumnItem = ({
     id,
     Header,
+    title,
     display,
     isadditionalcolumn,
     innerCells,
@@ -13,19 +14,26 @@ const groupedColumnItem = ({
         innerCells && innerCells.length > 0 && display === true;
 
     return (
-        <div className="column__innerCells__wrap grouped__columns__wrap">
-            {isItemToBeDisplayed ? <strong>{Header}</strong> : null}
+        <div className="ng-popover--column__list ng-popover--column__list--group">
+            {isItemToBeDisplayed ? (
+                <strong className="ng-popover--column__title">
+                    {title || Header}
+                </strong>
+            ) : null}
             {isItemToBeDisplayed
                 ? innerCells.map((cell) => {
                       const { cellId } = cell;
                       return (
-                          <div className="column__wrap" key={cellId}>
-                              <div className="column__checkbox">
-                                  <div className="form-check">
+                          <div
+                              className="ng-popover--column__wrap"
+                              key={cellId}
+                          >
+                              <div className="ng-popover--column__check">
+                                  <div className="neo-form-check">
                                       <input
                                           type="checkbox"
                                           id={`chk_selectInnerCell_${cellId}`}
-                                          className="form-check-input custom-checkbox form-check-input"
+                                          className="neo-checkbox form-check-input"
                                           data-testid={`selectInnerCell_${id}_${cellId}`}
                                           data-columnid={id}
                                           data-cellid={cellId}
@@ -37,7 +45,7 @@ const groupedColumnItem = ({
                                       />
                                       <label
                                           htmlFor={`chk_selectInnerCell_${cellId}`}
-                                          className="form-check-label"
+                                          className="neo-form-check__label"
                                       >
                                           {cell.Header}
                                       </label>
@@ -53,7 +61,8 @@ const groupedColumnItem = ({
 
 groupedColumnItem.propTypes = {
     id: PropTypes.string,
-    Header: PropTypes.string,
+    Header: PropTypes.any,
+    title: PropTypes.string,
     display: PropTypes.bool,
     isadditionalcolumn: PropTypes.bool,
     innerCells: PropTypes.arrayOf(PropTypes.object),

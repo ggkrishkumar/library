@@ -8,10 +8,13 @@ import { getValueOfDate } from "./utils/DateUtility";
 import FlightEdit from "./cells/FlightEdit";
 import SrEdit from "./cells/SrEdit";
 import SegmentEdit from "./cells/SegmentEdit";
+import RowAction from "./cells/RowAction";
 import RowEdit from "./cells/RowEdit";
+import RowDelete from "./cells/RowDelete";
 
 const GridComponent = (props) => {
     const {
+        allProps,
         className,
         title,
         gridHeight,
@@ -19,12 +22,12 @@ const GridComponent = (props) => {
         rowsToOverscan,
         passColumnToExpand,
         passRowActions,
-        passRowActionCallback,
         passGetRowInfo,
         passOnGridRefresh,
         hasPagination,
         CustomPanel,
         enableGroupHeaders,
+        enableJsxHeaders,
         gridHeader,
         rowSelector,
         globalSearch,
@@ -32,15 +35,21 @@ const GridComponent = (props) => {
         groupSort,
         columnChooser,
         exportData,
+        fileName,
         rowsForSelection,
         passIdAttribute,
         expandableColumn,
         multiRowSelection,
-        theme
+        passTheme,
+        enableServersideSorting,
+        treeStructure,
+        parentRowExpandable,
+        parentRowsToExpand
     } = props;
     const idAttribute = "travelId";
+    const parentIdAttribute = "titleId";
     const gridPageSize = 300;
-    const paginationType = "index"; // or - "cursor"
+    const paginationType = "index"; // or - "cursor" - if Gris is tree view and parentRowExpandable is false, then paginationType should be "index"
     // State for holding index page info
     const [indexPageInfo, setIndexPageInfo] = useState({
         pageNum: 1,
@@ -57,12 +66,134 @@ const GridComponent = (props) => {
     });
     // State for holding grid data
     const [gridData, setGridData] = useState([]);
+    // State for holding Original grid data, to be used while clearing group sort
+    const [originalGridData, setOriginalGridData] = useState([]);
+    // State for holding group sort options
+    const [sortOptions, setSortOptions] = useState([]);
     // State for holding selected rows
     const [userSelectedRows, setUserSelectedRows] = useState([]);
     // State for holding rows to deselect
     const [rowsToDeselect, setRowsToDeselect] = useState([]);
     // State for holding rows to select
     const [rowsToSelect, setRowsToSelect] = useState([]);
+
+    const [isEditOverlayOpened, setIsEditOverlayOpened] = useState(false);
+    const [rowDataToEdit, setRowDataToEdit] = useState(null);
+
+    const [isDeleteOverlayOpened, setIsDeleteOverlayOpened] = useState(false);
+    const [rowDataToDelete, setRowDataToDelete] = useState(null);
+
+    const isParentExpandedByDefault =
+        treeStructure &&
+        parentRowExpandable !== false &&
+        parentRowsToExpand &&
+        parentRowsToExpand.length > 0;
+
+    // Loginc for sorting data
+    const compareValues = (compareOrder, v1, v2) => {
+        let returnValue = 0;
+        if (compareOrder === "Ascending") {
+            if (v1 > v2) {
+                returnValue = 1;
+            } else if (v1 < v2) {
+                returnValue = -1;
+            }
+            return returnValue;
+        }
+        if (v1 < v2) {
+            returnValue = 1;
+        } else if (v1 > v2) {
+            returnValue = -1;
+        }
+        return returnValue;
+    };
+    // Return sorted data based on the parameters
+    const getSortedData = (data, sortValues) => {
+        if (data && data.length > 0 && sortValues && sortValues.length > 0) {
+            if (
+                treeStructure &&
+                parentIdAttribute !== null &&
+                parentIdAttribute !== undefined
+            ) {
+                const sortedTreeData = data.map((dataItem) => {
+                    const sortedDataItem = dataItem;
+                    const { childData } = dataItem;
+                    if (childData) {
+                        const childRows = childData.data;
+                        if (childRows && childRows.length > 0) {
+                            const sortedData = childRows.sort((x, y) => {
+                                let compareResult = 0;
+                                sortValues.forEach((option) => {
+                                    const { sortBy, sortOn, order } = option;
+                                    const newResult =
+                                        sortOn === "value"
+                                            ? compareValues(
+                                                  order,
+                                                  x[sortBy],
+                                                  y[sortBy]
+                                              )
+                                            : compareValues(
+                                                  order,
+                                                  x[sortBy][sortOn],
+                                                  y[sortBy][sortOn]
+                                              );
+                                    compareResult = compareResult || newResult;
+                                });
+                                return compareResult;
+                            });
+                            sortedDataItem.childData.data = sortedData;
+                        }
+                    }
+                    return sortedDataItem;
+                });
+                return sortedTreeData;
+            }
+            return data.sort((x, y) => {
+                let compareResult = 0;
+                sortValues.forEach((option) => {
+                    const { sortBy, sortOn, order } = option;
+                    const newResult =
+                        sortOn === "value"
+                            ? compareValues(order, x[sortBy], y[sortBy])
+                            : compareValues(
+                                  order,
+                                  x[sortBy][sortOn],
+                                  y[sortBy][sortOn]
+                              );
+                    compareResult = compareResult || newResult;
+                });
+                return compareResult;
+            });
+        }
+        return data;
+    };
+
+    const parentData = [
+        {
+            titleId: 0,
+            title: "EXCVGRATES",
+            count: 3,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        },
+        {
+            titleId: 1,
+            title: "EXCVGRATES",
+            count: 3,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        },
+        {
+            titleId: 2,
+            title: "EXCVGRATES",
+            count: 1,
+            lastModified: "User name",
+            date: "21 Jul 2020",
+            time: "18:39"
+        }
+    ];
 
     const airportCodeList = [
         "AAA",
@@ -136,16 +267,29 @@ const GridComponent = (props) => {
                 isExpandableColumn
             ) => {
                 const { travelId } = rowData;
-                return (
-                    <div className="travelId-details">
-                        <span>{travelId}</span>
-                    </div>
-                );
+                if (travelId !== null && travelId !== undefined) {
+                    return (
+                        <div className="travelId-details">
+                            <span>{travelId}</span>
+                        </div>
+                    );
+                }
+                return null;
             }
         },
         {
             groupHeader: "Flight & Segment",
-            Header: "Flight",
+            Header: () => {
+                return (
+                    <div className="flightHeader">
+                        <i className="flightIcon">
+                            <img src={FlightIcon} alt="Flight Info" />
+                        </i>
+                        <span className="flightText">Info</span>
+                    </div>
+                );
+            },
+            title: "Flight",
             accessor: "flight",
             width: 100,
             isSortable: true,
@@ -170,17 +314,20 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { flightno, date } = rowData.flight;
-                return (
-                    <div className="flight-details">
-                        <DisplayTag columnKey="flight" cellKey="flightno">
-                            <strong>{flightno}</strong>
-                        </DisplayTag>
-                        <DisplayTag columnKey="flight" cellKey="date">
-                            <span>{getValueOfDate(date, "cell")}</span>
-                        </DisplayTag>
-                    </div>
-                );
+                if (rowData.flight) {
+                    const { flightno, date } = rowData.flight;
+                    return (
+                        <div className="flight-details">
+                            <DisplayTag columnKey="flight" cellKey="flightno">
+                                <strong>{flightno}</strong>
+                            </DisplayTag>
+                            <DisplayTag columnKey="flight" cellKey="date">
+                                <span>{getValueOfDate(date, "cell")}</span>
+                            </DisplayTag>
+                        </div>
+                    );
+                }
+                return null;
             },
             editCell: (
                 rowData,
@@ -226,20 +373,23 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { from, to } = rowData.segment;
-                return (
-                    <div className="segment-details">
-                        <DisplayTag columnKey="segment" cellKey="from">
-                            <span>{from}</span>
-                        </DisplayTag>
-                        <i>
-                            <img src={FlightIcon} alt="segment" />
-                        </i>
-                        <DisplayTag columnKey="segment" cellKey="to">
-                            <span>{to}</span>
-                        </DisplayTag>
-                    </div>
-                );
+                if (rowData.segment) {
+                    const { from, to } = rowData.segment;
+                    return (
+                        <div className="segment-details">
+                            <DisplayTag columnKey="segment" cellKey="from">
+                                <span>{from}</span>
+                            </DisplayTag>
+                            <i>
+                                <img src={FlightIcon} alt="segment" />
+                            </i>
+                            <DisplayTag columnKey="segment" cellKey="to">
+                                <span>{to}</span>
+                            </DisplayTag>
+                        </div>
+                    );
+                }
+                return null;
             },
             editCell: (
                 rowData,
@@ -313,23 +463,105 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const {
-                    startTime,
-                    endTime,
-                    status,
-                    additionalStatus,
-                    flightModel,
-                    bodyType,
-                    type,
-                    timeStatus
-                } = rowData.details;
-                const timeStatusArray = timeStatus ? timeStatus.split(" ") : [];
-                const timeValue = timeStatusArray.shift();
-                const timeText = timeStatusArray.join(" ");
-                if (
-                    isExpandableColumn === null ||
-                    isExpandableColumn === true
-                ) {
+                if (rowData.details) {
+                    const {
+                        startTime,
+                        endTime,
+                        status,
+                        additionalStatus,
+                        flightModel,
+                        bodyType,
+                        type,
+                        timeStatus
+                    } = rowData.details;
+                    const timeStatusArray = timeStatus
+                        ? timeStatus.split(" ")
+                        : [];
+                    const timeValue = timeStatusArray.shift();
+                    const timeText = timeStatusArray.join(" ");
+                    if (
+                        isExpandableColumn === null ||
+                        isExpandableColumn === true
+                    ) {
+                        return (
+                            <div className="details-wrap">
+                                <ul>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="startTime"
+                                        >
+                                            {startTime}
+                                        </DisplayTag>
+                                        -
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="endTime"
+                                        >
+                                            {endTime}
+                                        </DisplayTag>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="status"
+                                        >
+                                            <span>{status}</span>
+                                        </DisplayTag>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="additionalStatus"
+                                        >
+                                            {additionalStatus}
+                                        </DisplayTag>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="flightModel"
+                                        >
+                                            {flightModel}
+                                        </DisplayTag>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="bodyType"
+                                        >
+                                            {bodyType}
+                                        </DisplayTag>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <span>
+                                            <DisplayTag
+                                                columnKey="details"
+                                                cellKey="type"
+                                            >
+                                                {type}
+                                            </DisplayTag>
+                                        </span>
+                                    </li>
+                                    <li className="divider">|</li>
+                                    <li>
+                                        <DisplayTag
+                                            columnKey="details"
+                                            cellKey="timeStatus"
+                                        >
+                                            <strong>{timeValue} </strong>
+                                            <span>{timeText}</span>
+                                        </DisplayTag>
+                                    </li>
+                                </ul>
+                            </div>
+                        );
+                    }
                     return (
                         <div className="details-wrap">
                             <ul>
@@ -355,15 +587,6 @@ const GridComponent = (props) => {
                                         cellKey="status"
                                     >
                                         <span>{status}</span>
-                                    </DisplayTag>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="additionalStatus"
-                                    >
-                                        {additionalStatus}
                                     </DisplayTag>
                                 </li>
                                 <li className="divider">|</li>
@@ -409,75 +632,7 @@ const GridComponent = (props) => {
                         </div>
                     );
                 }
-                return (
-                    <div className="details-wrap">
-                        <ul>
-                            <li>
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="startTime"
-                                >
-                                    {startTime}
-                                </DisplayTag>
-                                -
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="endTime"
-                                >
-                                    {endTime}
-                                </DisplayTag>
-                            </li>
-                            <li className="divider">|</li>
-                            <li>
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="status"
-                                >
-                                    <span>{status}</span>
-                                </DisplayTag>
-                            </li>
-                            <li className="divider">|</li>
-                            <li>
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="flightModel"
-                                >
-                                    {flightModel}
-                                </DisplayTag>
-                            </li>
-                            <li className="divider">|</li>
-                            <li>
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="bodyType"
-                                >
-                                    {bodyType}
-                                </DisplayTag>
-                            </li>
-                            <li className="divider">|</li>
-                            <li>
-                                <span>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="type"
-                                    >
-                                        {type}
-                                    </DisplayTag>
-                                </span>
-                            </li>
-                            <li className="divider">|</li>
-                            <li>
-                                <DisplayTag
-                                    columnKey="details"
-                                    cellKey="timeStatus"
-                                >
-                                    <strong>{timeValue} </strong>
-                                    <span>{timeText}</span>
-                                </DisplayTag>
-                            </li>
-                        </ul>
-                    </div>
-                );
+                return null;
             }
         },
         {
@@ -507,27 +662,30 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { percentage, value } = rowData.weight;
-                const splitValue = value ? value.split("/") : [];
-                let valuePrefix;
-                let valueSuffix = "";
-                if (splitValue.length === 2) {
-                    valuePrefix = splitValue[0];
-                    valueSuffix = splitValue[1];
+                if (rowData.weight) {
+                    const { percentage, value } = rowData.weight;
+                    const splitValue = value ? value.split("/") : [];
+                    let valuePrefix;
+                    let valueSuffix = "";
+                    if (splitValue.length === 2) {
+                        valuePrefix = splitValue[0];
+                        valueSuffix = splitValue[1];
+                    }
+                    return (
+                        <div className="weight-details">
+                            <DisplayTag columnKey="weight" cellKey="percentage">
+                                <strong className="per">{percentage}</strong>
+                            </DisplayTag>
+                            <DisplayTag columnKey="weight" cellKey="value">
+                                <span>
+                                    <strong>{valuePrefix}/</strong>
+                                    {valueSuffix}
+                                </span>
+                            </DisplayTag>
+                        </div>
+                    );
                 }
-                return (
-                    <div className="weight-details">
-                        <DisplayTag columnKey="weight" cellKey="percentage">
-                            <strong className="per">{percentage}</strong>
-                        </DisplayTag>
-                        <DisplayTag columnKey="weight" cellKey="value">
-                            <span>
-                                <strong>{valuePrefix}/</strong>
-                                {valueSuffix}
-                            </span>
-                        </DisplayTag>
-                    </div>
-                );
+                return null;
             }
         },
         {
@@ -555,27 +713,30 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { percentage, value } = rowData.volume;
-                const splitValue = value ? value.split("/") : [];
-                let valuePrefix;
-                let valueSuffix = "";
-                if (splitValue.length === 2) {
-                    valuePrefix = splitValue[0];
-                    valueSuffix = splitValue[1];
+                if (rowData.volume) {
+                    const { percentage, value } = rowData.volume;
+                    const splitValue = value ? value.split("/") : [];
+                    let valuePrefix;
+                    let valueSuffix = "";
+                    if (splitValue.length === 2) {
+                        valuePrefix = splitValue[0];
+                        valueSuffix = splitValue[1];
+                    }
+                    return (
+                        <div className="weight-details">
+                            <DisplayTag columnKey="volume" cellKey="percentage">
+                                <strong className="per">{percentage}</strong>
+                            </DisplayTag>
+                            <DisplayTag columnKey="volume" cellKey="value">
+                                <span>
+                                    <strong>{valuePrefix}/</strong>
+                                    {valueSuffix}
+                                </span>
+                            </DisplayTag>
+                        </div>
+                    );
                 }
-                return (
-                    <div className="weight-details">
-                        <DisplayTag columnKey="volume" cellKey="percentage">
-                            <strong className="per">{percentage}</strong>
-                        </DisplayTag>
-                        <DisplayTag columnKey="volume" cellKey="value">
-                            <span>
-                                <strong>{valuePrefix}/</strong>
-                                {valueSuffix}
-                            </span>
-                        </DisplayTag>
-                    </div>
-                );
+                return null;
             }
         },
         {
@@ -603,31 +764,38 @@ const GridComponent = (props) => {
                 isExpandableColumn
             ) => {
                 const { uldPositions } = rowData;
-                return (
-                    <div className="uld-details">
-                        <ul>
-                            {uldPositions.map((positions) => {
-                                const { position, value } = positions;
-                                return (
-                                    <li key={`${position}_${value}`}>
-                                        <DisplayTag
-                                            columnKey="uldPositions"
-                                            cellKey="position"
-                                        >
-                                            <span>{positions.position}</span>
-                                        </DisplayTag>
-                                        <DisplayTag
-                                            columnKey="uldPositions"
-                                            cellKey="value"
-                                        >
-                                            <strong>{positions.value}</strong>
-                                        </DisplayTag>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-                );
+                if (uldPositions) {
+                    return (
+                        <div className="uld-details">
+                            <ul>
+                                {uldPositions.map((positions, index) => {
+                                    const { position, value } = positions;
+                                    return (
+                                        <li key={index}>
+                                            <DisplayTag
+                                                columnKey="uldPositions"
+                                                cellKey="position"
+                                            >
+                                                <span>
+                                                    {positions.position}
+                                                </span>
+                                            </DisplayTag>
+                                            <DisplayTag
+                                                columnKey="uldPositions"
+                                                cellKey="value"
+                                            >
+                                                <strong>
+                                                    {positions.value}
+                                                </strong>
+                                            </DisplayTag>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    );
+                }
+                return null;
             }
         },
         {
@@ -652,17 +820,20 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { revenue, yeild } = rowData.revenue;
-                return (
-                    <div className="revenue-details">
-                        <DisplayTag columnKey="revenue" cellKey="revenue">
-                            <span className="large">{revenue}</span>
-                        </DisplayTag>
-                        <DisplayTag columnKey="revenue" cellKey="yeild">
-                            <span>{yeild}</span>
-                        </DisplayTag>
-                    </div>
-                );
+                if (rowData.revenue) {
+                    const { revenue, yeild } = rowData.revenue;
+                    return (
+                        <div className="revenue-details">
+                            <DisplayTag columnKey="revenue" cellKey="revenue">
+                                <span className="large">{revenue}</span>
+                            </DisplayTag>
+                            <DisplayTag columnKey="revenue" cellKey="yeild">
+                                <span>{yeild}</span>
+                            </DisplayTag>
+                        </div>
+                    );
+                }
+                return null;
             },
             sortValue: "revenue",
             isSearchable: true
@@ -680,11 +851,14 @@ const GridComponent = (props) => {
                 isExpandableColumn
             ) => {
                 const { sr } = rowData;
-                return (
-                    <div className="sr-details">
-                        <span>{sr}</span>
-                    </div>
-                );
+                if (sr) {
+                    return (
+                        <div className="sr-details">
+                            <span>{sr}</span>
+                        </div>
+                    );
+                }
+                return null;
             },
             editCell: (
                 rowData,
@@ -725,36 +899,33 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                const { sr, volume } = rowData.queuedBooking;
-                return (
-                    <div className="queued-details">
-                        <DisplayTag columnKey="queuedBooking" cellKey="sr">
-                            <span>
-                                <strong>{sr}</strong>
-                            </span>
-                        </DisplayTag>
-                        <DisplayTag columnKey="queuedBooking" cellKey="volume">
-                            <span>
-                                <strong>{volume}</strong>
-                            </span>
-                        </DisplayTag>
-                    </div>
-                );
+                if (rowData.queuedBooking) {
+                    const { sr, volume } = rowData.queuedBooking;
+                    return (
+                        <div className="queued-details">
+                            <DisplayTag columnKey="queuedBooking" cellKey="sr">
+                                <span>
+                                    <strong>{sr}</strong>
+                                </span>
+                            </DisplayTag>
+                            <DisplayTag
+                                columnKey="queuedBooking"
+                                cellKey="volume"
+                            >
+                                <span>
+                                    <strong>{volume}</strong>
+                                </span>
+                            </DisplayTag>
+                        </div>
+                    );
+                }
+                return null;
             }
         }
     ];
+    const [columns, setColumns] = useState([]);
 
-    const mappedOriginalColumns = originalColumns.map((column) => {
-        const updatedColumn = column;
-        if (!enableGroupHeaders && column.groupHeader) {
-            delete updatedColumn.groupHeader;
-        }
-        return updatedColumn;
-    });
-
-    const [columns, setColumns] = useState(mappedOriginalColumns);
-
-    const columnToExpand = {
+    const originalColumnToExpand = {
         Header: "Remarks",
         innerCells: [
             { Header: "Remarks", accessor: "remarks" },
@@ -812,17 +983,29 @@ const GridComponent = (props) => {
             );
         }
     };
+    const [columnToExpand, setColumnToExpand] = useState(null);
 
-    const getRowEditOverlay = (rowData, DisplayTag, rowUpdateCallBack) => {
-        return (
-            <RowEdit
-                airportCodeList={airportCodeList}
-                DisplayTag={DisplayTag}
-                rowData={rowData}
-                rowUpdateCallBack={rowUpdateCallBack}
-            />
-        );
+    const originalParentColumn = {
+        Header: "ParentColumn",
+        displayCell: (rowData) => {
+            const { titleId, title, count, lastModified, date, time } = rowData;
+            return (
+                <div className="parentRow">
+                    <h2 className="parentRowHead">
+                        {title} ({count})
+                    </h2>
+                    <div className="parentRowInfo">
+                        <span className="parentRowInfoType">
+                            Last Modified : {lastModified}
+                        </span>
+                        <span className="parentRowInfoType">{date}</span>
+                        <span className="parentRowInfoType">{time}</span>
+                    </div>
+                </div>
+            );
+        }
     };
+    const [parentColumn, setParentColumn] = useState(null);
 
     const calculateRowHeight = (row, gridColumns) => {
         // Minimum height for each row
@@ -850,7 +1033,11 @@ const GridComponent = (props) => {
                 rowHeight += widthVariable / 1000;
             }
             // Add logic to increase row height if row is expanded
-            if (isExpanded && passColumnToExpand && columnToExpand) {
+            if (
+                isExpanded &&
+                (passColumnToExpand || allProps) &&
+                columnToExpand
+            ) {
                 // Increase height based on the number of inner cells in additional columns
                 rowHeight +=
                     columnToExpand.innerCells &&
@@ -862,128 +1049,504 @@ const GridComponent = (props) => {
         return rowHeight;
     };
 
-    const rowActions = [
-        { label: "edit" },
-        { label: "delete" },
-        { label: "Send SCR", value: "SCR" },
-        { label: "Segment Summary", value: "SegmentSummary" },
-        { label: "Open Summary", value: "OpenSummary" },
-        { label: "Close Summary", value: "CloseSummary" }
-    ];
-
-    const rowActionCallback = (rowData, actionValue) => {
-        console.log(`Row action: ${actionValue}`);
-        console.log(rowData);
+    const updateData = (data, originalRow, updatedRow) => {
+        return data.map((row) => {
+            let newRow = row;
+            if (newRow[idAttribute] === originalRow[idAttribute]) {
+                newRow = updatedRow;
+            }
+            return newRow;
+        });
     };
 
     const onRowUpdate = (originalRow, updatedRow) => {
         setGridData((old) =>
             old.map((row) => {
-                let newRow = row;
-                if (
-                    Object.entries(row).toString() ===
-                    Object.entries(originalRow).toString()
-                ) {
-                    newRow = updatedRow;
+                if (row) {
+                    let rowToUpdate = row;
+                    if (treeStructure) {
+                        const { childData } = row;
+                        if (childData) {
+                            const { data } = childData;
+                            if (data && data.length > 0) {
+                                const newData = updateData(
+                                    data,
+                                    originalRow,
+                                    updatedRow
+                                );
+                                rowToUpdate.childData.data = newData;
+                            }
+                        }
+                    } else if (
+                        rowToUpdate[idAttribute] === originalRow[idAttribute]
+                    ) {
+                        rowToUpdate = updatedRow;
+                    }
+                    return rowToUpdate;
                 }
-                return newRow;
+                return row;
+            })
+        );
+        setOriginalGridData((old) =>
+            old.map((row) => {
+                if (row) {
+                    let rowToUpdate = row;
+                    if (treeStructure) {
+                        const { childData } = row;
+                        if (childData) {
+                            const { data } = childData;
+                            if (data && data.length > 0) {
+                                const newData = updateData(
+                                    data,
+                                    originalRow,
+                                    updatedRow
+                                );
+                                rowToUpdate.childData.data = newData;
+                            }
+                        }
+                    } else if (
+                        rowToUpdate[idAttribute] === originalRow[idAttribute]
+                    ) {
+                        rowToUpdate = updatedRow;
+                    }
+                    return rowToUpdate;
+                }
+                return row;
             })
         );
     };
 
     const onRowDelete = (originalRow) => {
-        setGridData((old) =>
-            old.filter((row) => {
-                return row !== originalRow;
-            })
-        );
-        if (paginationType === "index") {
-            setIndexPageInfo({
-                ...indexPageInfo,
-                total: indexPageInfo.total - 1
-            });
+        if (treeStructure) {
+            setGridData((old) =>
+                old.map((row) => {
+                    if (row) {
+                        const rowToUpdate = row;
+                        const { childData } = row;
+                        if (childData) {
+                            const { data } = childData;
+                            if (data && data.length > 0) {
+                                rowToUpdate.childData.data = data.filter(
+                                    (dataItem) => {
+                                        return (
+                                            dataItem[idAttribute] !==
+                                            originalRow[idAttribute]
+                                        );
+                                    }
+                                );
+                            }
+                        }
+                        return rowToUpdate;
+                    }
+                    return row;
+                })
+            );
+            setOriginalGridData((old) =>
+                old.map((row) => {
+                    if (row) {
+                        const rowToUpdate = row;
+                        const { childData } = row;
+                        if (childData) {
+                            const { data } = childData;
+                            if (data && data.length > 0) {
+                                rowToUpdate.childData.data = data.filter(
+                                    (dataItem) => {
+                                        return (
+                                            dataItem[idAttribute] !==
+                                            originalRow[idAttribute]
+                                        );
+                                    }
+                                );
+                            }
+                        }
+                        return rowToUpdate;
+                    }
+                    return row;
+                })
+            );
         } else {
-            setCursorPageInfo({
-                ...cursorPageInfo,
-                total: indexPageInfo.total - 1
-            });
+            setGridData((old) =>
+                old.filter((row) => {
+                    return row[idAttribute] !== originalRow[idAttribute];
+                })
+            );
+            setOriginalGridData((old) =>
+                old.filter((row) => {
+                    return row[idAttribute] !== originalRow[idAttribute];
+                })
+            );
+            if (paginationType === "index") {
+                setIndexPageInfo({
+                    ...indexPageInfo,
+                    total: indexPageInfo.total - 1
+                });
+            } else {
+                setCursorPageInfo({
+                    ...cursorPageInfo,
+                    total: indexPageInfo.total - 1
+                });
+            }
         }
     };
 
-    const onRowSelect = (selectedRows) => {
+    const onRowSelect = (selectedRows, deSelectedRows) => {
         console.log("Rows selected: ");
         console.log(selectedRows);
-        if (passIdAttribute) {
+        console.log("Rows deselected: ");
+        console.log(deSelectedRows);
+        if (allProps || passIdAttribute) {
             setUserSelectedRows(selectedRows);
+            // If a row is deselected, remove that row details from 'rowsToSelect' prop value (if present).
+            if (deSelectedRows && deSelectedRows.length > 0) {
+                const rowExistingSelection = rowsToSelect.find((rowId) => {
+                    const deselectedRow = deSelectedRows.find(
+                        (row) => row.travelId === rowId
+                    );
+                    if (deselectedRow) {
+                        return true;
+                    }
+                    return false;
+                });
+                if (rowExistingSelection) {
+                    setRowsToSelect(
+                        rowsToSelect.filter((rowId) => {
+                            const deselectedRow = deSelectedRows.find(
+                                (row) => row.travelId === rowId
+                            );
+                            if (deselectedRow) {
+                                return false;
+                            }
+                            return true;
+                        })
+                    );
+                }
+            }
+            // If a row is selected, remove that row details from 'rowsToDeselect' prop value (if present).
+            if (selectedRows && selectedRows.length > 0) {
+                const rowExistingDeselection = rowsToDeselect.find((rowId) => {
+                    const selectedRow = selectedRows.find(
+                        (row) => row.travelId === rowId
+                    );
+                    if (selectedRow) {
+                        return true;
+                    }
+                    return false;
+                });
+                if (rowExistingDeselection) {
+                    setRowsToDeselect(
+                        rowsToDeselect.filter((rowId) => {
+                            const selectedRow = selectedRows.find(
+                                (row) => row.travelId === rowId
+                            );
+                            if (selectedRow) {
+                                return false;
+                            }
+                            return true;
+                        })
+                    );
+                }
+            }
         }
     };
 
     const onGridRefresh = () => {
-        console.log("Grid Refrehsed ");
+        console.log("Grid Refreshed");
     };
 
-    const loadMoreData = (updatedPageInfo) => {
-        const info = { ...updatedPageInfo };
-        if (info.endCursor) {
-            info.endCursor += info.pageSize;
-        }
-        fetchData(info).then((data) => {
-            if (data && data.length > 0) {
-                setGridData(gridData.concat(data));
-                if (paginationType === "index") {
+    const bindRowEditOverlay = (rowData) => {
+        setRowDataToEdit(rowData);
+        setIsEditOverlayOpened(true);
+    };
+    const unbindRowEditOverlay = () => {
+        setRowDataToEdit(null);
+        setIsEditOverlayOpened(false);
+    };
+
+    const bindRowDeleteOverlay = (rowData) => {
+        setRowDataToDelete(rowData);
+        setIsDeleteOverlayOpened(true);
+    };
+    const unbindRowDeleteOverlay = () => {
+        setRowDataToDelete(null);
+        setIsDeleteOverlayOpened(false);
+    };
+
+    const rowActions = (rowData, closeOverlay) => {
+        return (
+            <RowAction
+                rowData={rowData}
+                closeOverlay={closeOverlay}
+                bindRowEditOverlay={bindRowEditOverlay}
+                bindRowDeleteOverlay={bindRowDeleteOverlay}
+            />
+        );
+    };
+
+    const loadMoreData = (updatedPageInfo, parentId) => {
+        if (parentId !== null && parentId !== undefined) {
+            // Tree structure
+            if (updatedPageInfo !== null && updatedPageInfo !== undefined) {
+                // Next page loading
+                const pageInfoForApi = { ...updatedPageInfo };
+                if (pageInfoForApi.endCursor) {
+                    pageInfoForApi.endCursor += pageInfoForApi.pageSize;
+                }
+                fetchData(pageInfoForApi).then((apiData) => {
+                    if (apiData && apiData.length > 0) {
+                        const updatedGridData = gridData.map((dataItem) => {
+                            const updatedData = dataItem;
+                            if (
+                                updatedData[parentIdAttribute] === parentId &&
+                                updatedData.childData &&
+                                updatedData.childData.data &&
+                                updatedData.childData.data.length > 0
+                            ) {
+                                updatedData.childData.data = [
+                                    ...updatedData.childData.data,
+                                    ...apiData
+                                ];
+                                if (paginationType === "index") {
+                                    updatedData.childData.pageNum =
+                                        pageInfoForApi.pageNum;
+                                    if (
+                                        pageInfoForApi.pageNum ===
+                                        (parentId + 1) * 10
+                                    ) {
+                                        updatedData.childData.lastPage = true;
+                                    }
+                                } else {
+                                    updatedData.childData.endCursor =
+                                        pageInfoForApi.endCursor;
+                                    if (
+                                        pageInfoForApi.endCursor ===
+                                        (parentId + 1) *
+                                            10 *
+                                            pageInfoForApi.pageSize -
+                                            1
+                                    ) {
+                                        updatedData.childData.lastPage = true;
+                                    }
+                                }
+                            }
+                            return updatedData;
+                        });
+                        setGridData(updatedGridData);
+                        setOriginalGridData(updatedGridData);
+                    }
+                });
+            } else {
+                // First load
+                const currentPageNum = parentId * 10 + 1;
+                const pageInfoForApi =
+                    paginationType === "index"
+                        ? {
+                              pageNum: currentPageNum,
+                              pageSize: gridPageSize
+                          }
+                        : {
+                              endCursor: currentPageNum * gridPageSize - 1,
+                              pageSize: gridPageSize
+                          };
+
+                fetchData(pageInfoForApi).then((apiData) => {
+                    if (apiData && apiData.length > 0) {
+                        const updatedGridData = gridData.map((dataItem) => {
+                            const updatedData = dataItem;
+                            if (updatedData[parentIdAttribute] === parentId) {
+                                updatedData.childData = {
+                                    pageNum: currentPageNum,
+                                    pageSize: gridPageSize,
+                                    lastPage: parentId === 2,
+                                    data: apiData
+                                };
+                                if (paginationType === "index") {
+                                    updatedData.childData.pageNum =
+                                        pageInfoForApi.pageNum;
+                                } else {
+                                    updatedData.childData.endCursor =
+                                        pageInfoForApi.endCursor;
+                                }
+                            }
+                            return updatedData;
+                        });
+                        setGridData(updatedGridData);
+                        setOriginalGridData(updatedGridData);
+                    }
+                });
+            }
+        } else {
+            const info = { ...updatedPageInfo };
+            if (info.endCursor) {
+                info.endCursor += info.pageSize;
+            }
+            fetchData(info).then((data) => {
+                if (data && data.length > 0) {
+                    setGridData(
+                        getSortedData(gridData.concat(data), sortOptions)
+                    );
+                    setOriginalGridData(originalGridData.concat(data));
+                    if (paginationType === "index") {
+                        setIndexPageInfo({
+                            ...indexPageInfo,
+                            pageNum: updatedPageInfo.pageNum
+                        });
+                    } else {
+                        setCursorPageInfo({
+                            ...cursorPageInfo,
+                            endCursor: info.endCursor
+                        });
+                    }
+                } else if (paginationType === "index") {
                     setIndexPageInfo({
                         ...indexPageInfo,
-                        pageNum: updatedPageInfo.pageNum
+                        pageNum: updatedPageInfo.pageNum,
+                        lastPage: true
                     });
                 } else {
                     setCursorPageInfo({
                         ...cursorPageInfo,
-                        endCursor: info.endCursor
+                        endCursor: info.endCursor,
+                        lastPage: true
                     });
                 }
-            } else if (paginationType === "index") {
-                setIndexPageInfo({
-                    ...indexPageInfo,
-                    pageNum: updatedPageInfo.pageNum,
-                    lastPage: true
-                });
-            } else {
-                setCursorPageInfo({
-                    ...cursorPageInfo,
-                    endCursor: info.endCursor,
-                    lastPage: true
-                });
-            }
-        });
+            });
+        }
+    };
+
+    const serverSideSorting = (groupSortOptions) => {
+        console.log("Server side sort", groupSortOptions);
+        if (groupSortOptions && groupSortOptions.length > 0) {
+            setSortOptions(groupSortOptions);
+            setGridData(getSortedData([...gridData], groupSortOptions));
+        } else {
+            setSortOptions([]);
+            setGridData(originalGridData);
+        }
     };
 
     useEffect(() => {
-        const pageInfo =
-            paginationType === "index" ? indexPageInfo : cursorPageInfo;
-        fetchData(pageInfo).then((data) => {
-            if (data && data.length > 0) {
-                setGridData(data);
-            } else if (paginationType === "index") {
-                setIndexPageInfo({
-                    ...indexPageInfo,
-                    lastPage: true
-                });
+        if (treeStructure) {
+            if (
+                parentRowExpandable !== false &&
+                isParentExpandedByDefault !== true
+            ) {
+                setGridData(parentData);
+                setOriginalGridData(parentData);
+                setIndexPageInfo(null);
+                setCursorPageInfo(null);
+                setParentColumn(originalParentColumn);
             } else {
-                setCursorPageInfo({
-                    ...cursorPageInfo,
-                    lastPage: true
-                });
+                const newPageSize = 5;
+                const newGridData = [...parentData];
+                fetchData({ pageNum: 1, pageSize: newPageSize }).then(
+                    (firstData) => {
+                        if (firstData && firstData.length > 0) {
+                            newGridData[0].childData = {
+                                pageNum: 1,
+                                pageSize: newPageSize,
+                                lastPage: false,
+                                data: firstData
+                            };
+                        }
+                        fetchData({ pageNum: 11, pageSize: newPageSize }).then(
+                            (secondData) => {
+                                if (secondData && secondData.length > 0) {
+                                    newGridData[1].childData = {
+                                        pageNum: 11,
+                                        pageSize: newPageSize,
+                                        lastPage: false,
+                                        data: secondData
+                                    };
+                                }
+                                fetchData({
+                                    pageNum: 21,
+                                    pageSize: newPageSize
+                                }).then((thirdData) => {
+                                    if (thirdData && thirdData.length > 0) {
+                                        newGridData[2].childData = {
+                                            pageNum: 21,
+                                            pageSize: newPageSize,
+                                            lastPage: false,
+                                            data: thirdData
+                                        };
+                                    }
+                                    setGridData(newGridData);
+                                    setOriginalGridData(newGridData);
+                                    setIndexPageInfo(null);
+                                    setCursorPageInfo(null);
+                                    setParentColumn(originalParentColumn);
+                                });
+                            }
+                        );
+                    }
+                );
             }
-        });
-        if (rowsForSelection && rowsForSelection.length > 0) {
-            setRowsToSelect(rowsForSelection);
+        } else {
+            const pageInfo =
+                paginationType === "index" ? indexPageInfo : cursorPageInfo;
+            fetchData(pageInfo).then((data) => {
+                if (data && data.length > 0) {
+                    setGridData(data);
+                    setOriginalGridData(data);
+                    // Update local state based on rowsToSelect
+                    if (rowsForSelection && rowsForSelection.length > 0) {
+                        setRowsToSelect(rowsForSelection);
+                        setUserSelectedRows(
+                            data.filter((initialData) => {
+                                const { travelId } = initialData;
+                                return rowsForSelection.includes(travelId);
+                            })
+                        );
+                    }
+                } else if (paginationType === "index") {
+                    setIndexPageInfo({
+                        ...indexPageInfo,
+                        lastPage: true
+                    });
+                } else {
+                    setCursorPageInfo({
+                        ...cursorPageInfo,
+                        lastPage: true
+                    });
+                }
+            });
         }
+        const mappedOriginalColumns = originalColumns.map((column) => {
+            const updatedColumn = column;
+            if (!(allProps || enableGroupHeaders) && column.groupHeader) {
+                delete updatedColumn.groupHeader;
+            }
+            if (!(allProps || enableJsxHeaders) && column.title) {
+                // We know that jsx Header is been provided only for Flight column
+                // Hence update the Header value to string "Flight" and delete title
+                updatedColumn.Header = "Flight";
+                delete updatedColumn.title;
+            }
+            return updatedColumn;
+        });
+        setColumns(mappedOriginalColumns);
+        setColumnToExpand(originalColumnToExpand);
     }, []);
 
     const removeRowSelection = (event) => {
         const rowId = event.currentTarget.dataset.id;
         setRowsToDeselect([Number(rowId)]);
+        // If a row is deselected, remove that row details from 'rowsToSelect' prop value (if present).
+        setRowsToSelect(
+            rowsToSelect.filter((selectedRowId) => {
+                return selectedRowId !== Number(rowId);
+            })
+        );
+        // Update local state based on updated rowsToSelect
+        setUserSelectedRows(
+            userSelectedRows.filter((row) => {
+                const { travelId } = row;
+                return travelId !== Number(rowId);
+            })
+        );
     };
+
+    const theme = "portal";
 
     const gridPageInfo =
         paginationType === "index" ? indexPageInfo : cursorPageInfo;
@@ -992,13 +1555,14 @@ const GridComponent = (props) => {
         const { travelId } = rowData;
         return {
             isRowExpandable: travelId % 2 === 0,
+            isRowSelectable: travelId % 3 !== 0,
             className: travelId % 10 === 0 ? "disabled" : ""
         };
     };
 
     if (gridData && gridData.length > 0 && columns && columns.length > 0) {
         return (
-            <div className={theme === "portal" ? "sample-bg" : ""}>
+            <div className={passTheme ? "sample-bg" : ""}>
                 <div className="selectedRows">
                     {userSelectedRows.map((row) => {
                         return (
@@ -1015,43 +1579,79 @@ const GridComponent = (props) => {
                         );
                     })}
                 </div>
+                {isEditOverlayOpened && rowDataToEdit !== null ? (
+                    <div className="overlay">
+                        <RowEdit
+                            rowData={rowDataToEdit}
+                            airportCodeList={airportCodeList}
+                            onRowUpdate={onRowUpdate}
+                            unbindRowEditOverlay={unbindRowEditOverlay}
+                        />
+                    </div>
+                ) : null}
+                {isDeleteOverlayOpened && rowDataToDelete !== null ? (
+                    <div className="overlay">
+                        <RowDelete
+                            rowData={rowDataToDelete}
+                            onRowDelete={onRowDelete}
+                            unbindRowDeleteOverlay={unbindRowDeleteOverlay}
+                        />
+                    </div>
+                ) : null}
                 <Grid
                     className={className}
-                    theme={theme}
+                    theme={passTheme ? theme : null}
                     title={title}
                     gridHeight={gridHeight}
                     gridWidth={gridWidth}
                     gridData={gridData}
                     rowsToOverscan={rowsToOverscan}
-                    idAttribute={passIdAttribute ? idAttribute : ""}
-                    paginationType={hasPagination ? paginationType : null}
-                    pageInfo={hasPagination ? gridPageInfo : null}
-                    loadMoreData={loadMoreData}
-                    columns={columns}
-                    columnToExpand={passColumnToExpand ? columnToExpand : null}
-                    rowActions={passRowActions ? rowActions : null}
-                    rowActionCallback={
-                        passRowActionCallback ? rowActionCallback : null
+                    idAttribute={allProps || passIdAttribute ? idAttribute : ""}
+                    paginationType={
+                        allProps || hasPagination ? paginationType : null
                     }
-                    getRowEditOverlay={getRowEditOverlay}
+                    pageInfo={allProps || hasPagination ? gridPageInfo : null}
+                    loadMoreData={loadMoreData}
+                    serverSideSorting={
+                        enableServersideSorting ? serverSideSorting : null
+                    }
+                    columns={columns}
+                    columnToExpand={
+                        allProps || passColumnToExpand ? columnToExpand : null
+                    }
+                    parentColumn={treeStructure ? parentColumn : null}
+                    parentIdAttribute={treeStructure ? parentIdAttribute : null}
+                    parentRowExpandable={
+                        treeStructure === true && parentRowExpandable === false
+                            ? parentRowExpandable
+                            : null
+                    }
+                    parentRowsToExpand={
+                        parentRowsToExpand && parentRowsToExpand.length > 0
+                            ? parentRowsToExpand
+                            : null
+                    }
+                    rowActions={allProps || passRowActions ? rowActions : null}
                     calculateRowHeight={calculateRowHeight}
-                    expandableColumn={expandableColumn}
+                    expandableColumn={allProps || expandableColumn}
                     onRowUpdate={onRowUpdate}
-                    onRowDelete={onRowDelete}
                     onRowSelect={onRowSelect}
-                    getRowInfo={passGetRowInfo ? getRowInfo : null}
-                    onGridRefresh={passOnGridRefresh ? onGridRefresh : null}
+                    getRowInfo={allProps || passGetRowInfo ? getRowInfo : null}
+                    onGridRefresh={
+                        allProps || passOnGridRefresh ? onGridRefresh : null
+                    }
                     CustomPanel={CustomPanel}
                     rowsToSelect={rowsToSelect}
                     rowsToDeselect={rowsToDeselect}
                     multiRowSelection={multiRowSelection}
-                    gridHeader={gridHeader}
-                    rowSelector={rowSelector}
-                    globalSearch={globalSearch}
-                    columnFilter={columnFilter}
-                    groupSort={groupSort}
-                    columnChooser={columnChooser}
-                    exportData={exportData}
+                    gridHeader={allProps || gridHeader}
+                    rowSelector={allProps || rowSelector}
+                    globalSearch={allProps || globalSearch}
+                    columnFilter={allProps || columnFilter}
+                    groupSort={allProps || groupSort}
+                    columnChooser={allProps || columnChooser}
+                    exportData={allProps || exportData}
+                    fileName={fileName || null}
                 />
             </div>
         );

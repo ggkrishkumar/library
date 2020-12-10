@@ -43,6 +43,7 @@ const ColumnsList = (props) => {
                     const {
                         columnId,
                         Header,
+                        title,
                         isDisplayInExpandedRegion,
                         innerCells,
                         isGroupHeader,
@@ -55,6 +56,7 @@ const ColumnsList = (props) => {
                             moveColumn={moveColumn}
                             findColumn={findColumn}
                             columnHeader={Header}
+                            columnTitle={title}
                             isadditionalcolumn={isDisplayInExpandedRegion}
                             isGroupHeader={isGroupHeader}
                             columns={columns}

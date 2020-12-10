@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 const DefaultColumnFilter = ({ column: { filterValue, setFilter } }) => {
     return (
         <input
-            className="txt"
+            className="ng-txt"
             data-testid="columnFilter-textbox"
             value={filterValue || ""}
             onChange={(e) => {

@@ -2,58 +2,49 @@
     $remSize: $size / $em-base;
     @return #{$remSize}rem;
 }
-.neo-grid-header {
-    background-color: var(--secondary);
-    display: flex;
-    padding: rem(12) rem(4);
-    justify-content: space-between;
-    &__results {
+.neo-grid {
+    &__header {
+        background-color: var(--light_hover);
         display: flex;
-        font-size: rem(14);
-        color: var(--titlecolor);
-        font-weight: $font-weight-bold;
-        align-items: center;
-        span {
-            margin-left: rem(5);
-            display: inline-block;
-        }
-        .showing {
-            margin-left: rem(5);
-            padding-left: rem(5);
-            position: relative;
-            &:before {
-                content: "";
-                position: absolute;
-                height: rem(15);
-                width: 1px;
-                left: 0;
-                top: 3px;
-                background: var(--default);
+        padding: rem(8) rem(4);
+        justify-content: space-between;
+        .ng-header-results {
+            display: flex;
+            font-size: rem(14);
+            color: var(--textcolor);
+            align-items: center;
+            min-width: rem(90);
+            &__check {
+                padding-right: 4px;
             }
-        }
-    }
-    &__utilities {
-        display: flex;
-        align-items: center;
-        .txt-wrap {
-            position: relative;
-            .txt {
-                padding: 1px 0 0 rem(23);
-            }
-            i {
-                position: absolute;
-                left: 7px;
-                top: 0;
-                height: 100%;
-                display: flex;
-                align-items: center;
-            }
-        }
-        .utilities-icon-container {
-            position: relative;
-            .utilities-icon {
+            &__title {
                 margin-left: rem(4);
-                border: var(--border-grey) solid 1px;
+                display: inline-block;
+            }
+        }
+        .ng-header-utils {
+            display: flex;
+            align-items: center;
+            .ng-txt-wrap {
+                position: relative;
+                .ng-txt {
+                    padding: 1px 0 0 rem(24);
+                }
+                &__icon {
+                    position: absolute;
+                    left: 7px;
+                    top: 0;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                }
+            }
+            &__items {
+                position: relative;
+            }
+            &__icons {
+                margin-left: rem(8);
+                border: var(--border) solid 1px;
                 border-radius: rem(3);
                 cursor: pointer;
                 line-height: 1px;
@@ -62,9 +53,11 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                background: var(--white);
             }
         }
     }
+
     &__customPanel {
         flex-grow: 1;
         align-items: center;

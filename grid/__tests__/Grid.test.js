@@ -3,8 +3,6 @@ import React from "react";
 import { render, cleanup, fireEvent } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import "@testing-library/jest-dom/extend-expect";
-/* eslint-disable no-unused-vars */
-import regeneratorRuntime from "regenerator-runtime";
 import Grid from "../src/index";
 
 describe("render Index file ", () => {
@@ -31,6 +29,37 @@ describe("render Index file ", () => {
             </div>
         );
     });
+    const editedRowValue = {
+        travelId: 0,
+        flight: {
+            flightno: "123",
+            date: "31-Aug-2016"
+        }
+    };
+    const mockUpdateDateValue = jest.fn();
+    const mockEditCell = jest.fn((rowData, DisplayTag, rowUpdateCallBack) => {
+        const { flightno, date } = rowData.flight;
+        return (
+            <div>
+                <DisplayTag columnKey="flight" cellKey="flightno">
+                    <input
+                        data-testid="flightnoinput"
+                        className="flight-no-input"
+                        type="text"
+                        value={flightno}
+                        onChange={() => rowUpdateCallBack("nothing")}
+                    />
+                </DisplayTag>
+                <DisplayTag columnKey="flight" cellKey="date">
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={mockUpdateDateValue}
+                    />
+                </DisplayTag>
+            </div>
+        );
+    });
 
     const gridColumns = [
         {
@@ -41,7 +70,10 @@ describe("render Index file ", () => {
             disableFilters: true
         },
         {
-            Header: "Flight",
+            Header: () => {
+                return <span className="flightHeader">Flight</span>;
+            },
+            title: "Flight",
             accessor: "flight",
             width: 100,
             isSortable: true,
@@ -61,7 +93,8 @@ describe("render Index file ", () => {
             ],
             isSearchable: true,
             sortValue: "flightno",
-            Cell: mockDisplayCell
+            displayCell: mockDisplayCell,
+            editCell: mockEditCell
         },
         {
             Header: "SR",
@@ -89,7 +122,6 @@ describe("render Index file ", () => {
                     isSearchable: true
                 }
             ],
-            disableSortBy: true,
             displayCell: (rowData, DisplayTag) => {
                 const { uldPositions } = rowData;
                 return (
@@ -117,7 +149,6 @@ describe("render Index file ", () => {
                     </div>
                 );
             },
-            columnId: "column_3",
             isSearchable: true
         }
     ];
@@ -297,53 +328,11 @@ describe("render Index file ", () => {
         });
     }
 
-    const mockGetRowEditOverlay = jest.fn(
-        (rowData, DisplayTag, rowUpdateCallBack) => {
-            const { flight } = rowData;
-            const updateRowValue = () => {
-                flight.flightno = "007";
-                rowUpdateCallBack(rowData);
-            };
-            return (
-                <div className="row-edit">
-                    <div className="edit-flight">
-                        <DisplayTag columnKey="flight" cellKey="flightno">
-                            <div className="edit-flight-no">
-                                <input
-                                    type="text"
-                                    value={flight.flightno}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                        <DisplayTag columnKey="flight" cellKey="date">
-                            <div className="edit-flight-date">
-                                <input
-                                    type="date"
-                                    value={flight.date}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                    </div>
-                </div>
-            );
-        }
-    );
-
-    const mockRowActions = [
-        { label: "edit" },
-        { label: "delete" },
-        { label: "Send SCR", value: "SCR" },
-        { label: "Segment Summary", value: "SegmentSummary" },
-        { label: "Open Summary", value: "OpenSummary" },
-        { label: "Close Summary", value: "CloseSummary" }
-    ];
-
     const getRowInfo = (rowData) => {
         const { travelId } = rowData;
         return {
             isRowExpandable: travelId % 2 === 0,
+            isRowSelectable: travelId % 3 !== 0,
             className: travelId % 10 === 0 ? "disabled" : ""
         };
     };
@@ -354,7 +343,6 @@ describe("render Index file ", () => {
 
     const mockRowsToDeselect = [1, 2];
 
-    const mockRowActionCallback = jest.fn();
     const mockCalculateRowHeight = jest.fn((row, columnsInGrid) => {
         // Minimum height for each row
         let rowHeight = 50;
@@ -392,8 +380,8 @@ describe("render Index file ", () => {
         }
         return rowHeight;
     });
+    const mockRowActions = jest.fn();
     const mockUpdateRowData = jest.fn();
-    const mockDeleteRowData = jest.fn();
     const mockSelectBulkData = jest.fn();
     const mockGridRefresh = jest.fn();
     const mockLoadMoreData = jest.fn();
@@ -516,9 +504,9 @@ describe("render Index file ", () => {
     });
     afterEach(cleanup);
 
-    it("test custom className, theme, row expand, column filter and Ascending group sort without row height calculation", () => {
+    it("test custom className, theme, row expand, column filter, Ascending group sort and Cell edit without row height calculation", () => {
         mockOffsetSize(600, 600);
-        const { container, getByTestId } = render(
+        const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 className="icargoCustomClass"
                 theme="portal"
@@ -533,17 +521,14 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 rowsToDeselect={mockRowsToDeselect}
             />
         );
         const gridContainer = container;
 
-        // Row expansion
+        // Check if Grid id rendered.
         expect(gridContainer).toBeInTheDocument();
 
         // Check if custom class name is present or not
@@ -554,60 +539,52 @@ describe("render Index file ", () => {
 
         // Check if class name for portal theme is present or not
         const portalThemeClassElement = gridContainer.getElementsByClassName(
-            "neo-grid-portal"
+            "neo-grid--portal"
         );
         expect(portalThemeClassElement.length).toBeGreaterThan(0);
 
-        const expander = gridContainer.getElementsByClassName("expander")[2];
+        const expander = getAllByTestId("rowExpanderIcon")[2];
         act(() => {
             expander.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         });
-        const expandRegion = gridContainer.getElementsByClassName("expand");
+        const expandRegion = getAllByTestId("rowExpandedRegion");
         expect(expandRegion.length).toBeGreaterThan(0);
 
         // Column Filter Search
-        const toggleColumnFilter = gridContainer.querySelector(
-            "[data-testid='toggleColumnFilter']"
-        );
+        const toggleColumnFilter = getByTestId("toggleColumnFilter");
         act(() => {
             toggleColumnFilter.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
         // Flight Column Search
-        const columnInput = gridContainer.getElementsByClassName("txt").item(1);
+        const columnInput = getAllByTestId("columnFilter-textbox")[0];
         fireEvent.change(columnInput, { target: { value: "222" } });
         expect(columnInput.value).toBe("222");
         fireEvent.change(columnInput, { target: { value: "" } });
         expect(columnInput.value).toBe("");
         // SR Column Search
-        const SrInput = gridContainer.getElementsByClassName("txt").item(2);
+        const SrInput = getAllByTestId("columnFilter-textbox")[1];
         fireEvent.change(SrInput, { target: { value: "74" } });
         expect(SrInput.value).toBe("74");
         fireEvent.change(SrInput, { target: { value: "" } });
         expect(SrInput.value).toBe("");
         // ULD Positions column search
-        const positionInput = gridContainer
-            .getElementsByClassName("txt")
-            .item(3);
+        const positionInput = getAllByTestId("columnFilter-textbox")[2];
         fireEvent.change(positionInput, { target: { value: "l1" } });
         expect(positionInput.value).toBe("l1");
         fireEvent.change(positionInput, { target: { value: "" } });
         expect(positionInput.value).toBe("");
 
         // Apply Ascending Sort
-        const toggleGroupSortOverLay = gridContainer.querySelector(
-            "[data-testid='toggleGroupSortOverLay']"
-        );
+        const toggleGroupSortOverLay = getByTestId("toggleGroupSortOverLay");
         act(() => {
             toggleGroupSortOverLay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        let sortOverlay = gridContainer.querySelector(
-            "[class='neo-grid-popover__sort']"
-        );
-        const addNewSort = sortOverlay.querySelector("[class='sort__txt']");
+        let sortOverlay = getByTestId("groupsortoverlay");
+        const addNewSort = getByTestId("addSort");
         act(() => {
             addNewSort.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -619,79 +596,31 @@ describe("render Index file ", () => {
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        sortOverlay = gridContainer.querySelector(
-            "[class='neo-grid-popover__sort']"
+        sortOverlay = container.querySelector(
+            "[data-testid='groupsortoverlay']"
         );
         expect(sortOverlay).toBeNull();
-    });
 
-    it("test Descending group sort with row height calculation", () => {
-        mockOffsetSize(600, 600);
-        const { container, getByTestId } = render(
-            <Grid
-                title={mockTitle}
-                gridHeight={mockGridHeight}
-                gridWidth={mockGridWidth}
-                gridData={data}
-                idAttribute="travelId"
-                paginationType="index"
-                pageInfo={pageInfo}
-                loadMoreData={mockLoadMoreData}
-                columns={gridColumns}
-                columnToExpand={mockAdditionalColumn}
-                rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
-                calculateRowHeight={mockCalculateRowHeight}
-                onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
-                onRowSelect={mockSelectBulkData}
-            />
-        );
-        const gridContainer = container;
-        expect(gridContainer).toBeInTheDocument();
+        // Cell edit
+        const editButton = getAllByTestId("cell-edit-icon");
+        act(() => {
+            editButton[0].dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        const flightNoInput = getByTestId("flightnoinput");
+        expect(flightNoInput.value).toBe("XX6983");
+        fireEvent.change(flightNoInput, { target: { value: "123" } });
 
-        // Apply Descending Sort
-        const toggleGroupSortOverLay = gridContainer.querySelector(
-            "[data-testid='toggleGroupSortOverLay']"
-        );
-        act(() => {
-            toggleGroupSortOverLay.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        let sortOverlay = gridContainer.querySelector(
-            "[class='neo-grid-popover__sort']"
-        );
-        const addNewSort = sortOverlay.querySelector("[class='sort__txt']");
-        act(() => {
-            addNewSort.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Change Sort Order
-        const sortOrderSelectList = document
-            .querySelector(".sort__bodyContent")
-            .getElementsByClassName("sort__reorder")[3]
-            .getElementsByTagName("select")[0];
-        fireEvent.change(sortOrderSelectList, {
-            target: { value: "Descending" }
-        });
-        const applySortButton = getByTestId("saveSort");
-        act(() => {
-            applySortButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        sortOverlay = gridContainer.querySelector(
-            "[class='neo-grid-popover__sort']"
-        );
-        expect(sortOverlay).toBeNull();
+        const setState = jest.fn(() => editedRowValue);
+        const useStateSpy = jest.spyOn(React, "useState");
+        useStateSpy.mockImplementation(() => [editedRowValue, setState]);
+        fireEvent.click(getByTestId("cell-edit-save"));
     });
 
     it("test row options functionalities and column sort with row height calculation, custom panel and refresh button not passed", () => {
         mockOffsetSize(600, 600);
-        const { getByText, container, getByTestId } = render(
+        const { getAllByTestId, container, getByTestId } = render(
             <Grid
                 title={mockTitle}
                 gridHeight={mockGridHeight}
@@ -704,11 +633,8 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
             />
         );
@@ -722,91 +648,42 @@ describe("render Index file ", () => {
         expect(customPanelElement.length).toBe(0);
 
         // Check if refresh icon is not present as the property is not passed to Grid
-        const refreshElement = gridContainer.getElementsByClassName(
-            "refresh-data"
+        const refreshElement = gridContainer.querySelectorAll(
+            "[data-testid='refreshGrid']"
         );
         expect(refreshElement.length).toBe(0);
 
-        // Row Options
-        let rowOptionsIcon = gridContainer.querySelector(
-            "[class=icon-row-options]"
-        ).firstChild;
-        let rowOptionsOverlay = null;
-        let rowOptionActionOverlay = null;
-        // Do row edit
+        // Open actions overlay
+        const rowActionOpenLinks = getAllByTestId("rowActions-open-link");
         act(() => {
-            rowOptionsIcon.dispatchEvent(
+            rowActionOpenLinks[0].dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        rowOptionsOverlay = gridContainer
-            .getElementsByClassName("row-options-overlay")
-            .item(0);
-        expect(rowOptionsOverlay).toBeInTheDocument();
-        const EditLink = getByText("Edit");
+        // Check if row actions overlay has been opened
+        const rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
+        expect(rowActionsOverlay).toBeInTheDocument();
+        // Click close button
+        const closeButton = getByTestId("close-rowActions-kebab-overlay");
         act(() => {
-            EditLink.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-        rowOptionActionOverlay = gridContainer
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeInTheDocument();
-        const flightnoInput = rowOptionActionOverlay
-            .getElementsByClassName("edit-flight-no")[0]
-            .getElementsByTagName("input")[0];
-        fireEvent.change(flightnoInput, { target: { value: "dfg" } });
-        const rowEditSave = getByTestId("rowEditOverlay-save");
-        act(() => {
-            rowEditSave.dispatchEvent(
+            closeButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        rowOptionActionOverlay = gridContainer
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeNull();
-        // Do row delete
-        rowOptionsIcon = gridContainer.querySelector("[class=icon-row-options]")
-            .lastChild;
-        act(() => {
-            rowOptionsIcon.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        rowOptionsOverlay = gridContainer
-            .getElementsByClassName("row-options-overlay")
-            .item(0);
-        expect(rowOptionsOverlay).toBeInTheDocument();
-        const DeleteLink = getByText("Delete");
-        act(() => {
-            DeleteLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        rowOptionActionOverlay = gridContainer
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeInTheDocument();
-        const rowDelete = getByTestId("rowDeleteOverlay-Delete");
-        act(() => {
-            rowDelete.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        });
-        rowOptionActionOverlay = gridContainer
-            .getElementsByClassName("row-option-action-overlay")
-            .item(0);
-        expect(rowOptionActionOverlay).toBeNull();
+        // Check if overlay has been closed
+        const overlayContainer = container.querySelectorAll(
+            "[data-testid='rowActions-kebab-overlay']"
+        );
+        expect(overlayContainer.length).toBe(0);
 
         // Column Sort
-        const flightSort = gridContainer.getElementsByClassName(
-            "column-heading"
-        )[2].firstChild;
+        const flightSort = getAllByTestId("column-header-sort")[2];
         act(() => {
             flightSort.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        const idSort = gridContainer.getElementsByClassName("column-heading")[1]
-            .firstChild;
+        const idSort = getAllByTestId("column-header-sort")[1];
         act(() => {
             idSort.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         });
@@ -827,10 +704,7 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
             />
         );
@@ -854,10 +728,7 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumnWithoutInnerCells}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 onGridRefresh={mockGridRefresh}
                 CustomPanel={mockCustomPanel}
@@ -878,41 +749,45 @@ describe("render Index file ", () => {
         expect(customPanelElement.length).toBeGreaterThan(0);
 
         // Check if refresh icon is present
-        const refreshElement = gridContainer.getElementsByClassName(
-            "refresh-data"
+        const refreshElement = gridContainer.querySelectorAll(
+            "[data-testid='refreshGrid']"
         );
         expect(refreshElement.length).toBeGreaterThan(0);
 
         // Global filter
         const globalFilter = gridContainer.querySelectorAll(
-            ".neo-grid-header_globalFilter"
+            "[data-testid='globalFilter-textbox']"
         );
         expect(globalFilter.length).toBe(0);
 
         // Column Filter
         const columnFilterIcon = gridContainer.querySelectorAll(
-            ".keyword-search"
+            "[data-testid='columnFilter-textbox']"
         );
         expect(columnFilterIcon.length).toBe(0);
 
         // Group Sort
-        const groupSortIcon = gridContainer.querySelectorAll(".group-sort");
+        const groupSortIcon = gridContainer.querySelectorAll(
+            "[data-testid='toggleGroupSortOverLay']"
+        );
         expect(groupSortIcon.length).toBe(0);
 
         // Column Chooser
         const columnChooserIcon = gridContainer.querySelectorAll(
-            ".manage-columns"
+            "[data-testid='toggleManageColumnsOverlay']"
         );
         expect(columnChooserIcon.length).toBe(0);
 
         // Export Data
-        const exportDataIcon = gridContainer.querySelectorAll(".export-data");
+        const exportDataIcon = gridContainer.querySelectorAll(
+            "[data-testid='toggleExportDataOverlay']"
+        );
         expect(exportDataIcon.length).toBe(0);
     });
 
     it("test Grid loading without any data", () => {
         mockOffsetSize(600, 600);
-        const { container } = render(
+        const { container, getByTestId } = render(
             <Grid
                 title={mockTitle}
                 gridHeight={mockGridHeight}
@@ -924,10 +799,7 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 onGridRefresh={mockGridRefresh}
                 CustomPanel={mockCustomPanel}
@@ -942,47 +814,11 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
 
         // Check if error message is present
-        const errorElement = gridContainer.getElementsByClassName("error");
-        expect(errorElement.length).toBeGreaterThan(0);
+        const errorElement = getByTestId("nodataerror");
+        expect(errorElement).toBeInTheDocument();
     });
 
     it("test Grid loading without columns", () => {
-        mockOffsetSize(600, 600);
-        const { container } = render(
-            <Grid
-                title={mockTitle}
-                gridHeight={mockGridHeight}
-                gridWidth={mockGridWidth}
-                gridData={data}
-                idAttribute="travelId"
-                paginationType="index"
-                pageInfo={pageInfo}
-                loadMoreData={mockLoadMoreData}
-                columnToExpand={mockAdditionalColumn}
-                rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
-                onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
-                onRowSelect={mockSelectBulkData}
-                onGridRefresh={mockGridRefresh}
-                CustomPanel={mockCustomPanel}
-                globalSearch={false}
-                columnFilter={false}
-                groupSort={false}
-                columnChooser={false}
-                exportData={false}
-            />
-        );
-        const gridContainer = container;
-        expect(gridContainer).toBeInTheDocument();
-
-        // Check if error message is present
-        const errorElement = gridContainer.getElementsByClassName("error");
-        expect(errorElement.length).toBeGreaterThan(0);
-    });
-
-    it("test row selection retained after applying group sort", () => {
         mockOffsetSize(600, 600);
         const { container, getByTestId } = render(
             <Grid
@@ -994,13 +830,43 @@ describe("render Index file ", () => {
                 paginationType="index"
                 pageInfo={pageInfo}
                 loadMoreData={mockLoadMoreData}
+                columnToExpand={mockAdditionalColumn}
+                rowActions={mockRowActions}
+                onRowUpdate={mockUpdateRowData}
+                onRowSelect={mockSelectBulkData}
+                onGridRefresh={mockGridRefresh}
+                CustomPanel={mockCustomPanel}
+                globalSearch={false}
+                columnFilter={false}
+                groupSort={false}
+                columnChooser={false}
+                exportData={false}
+            />
+        );
+        const gridContainer = container;
+        expect(gridContainer).toBeInTheDocument();
+
+        // Check if error message is present
+        const errorElement = getByTestId("nocolumnserror");
+        expect(errorElement).toBeInTheDocument();
+    });
+
+    it("test row selection retained after applying group sort", () => {
+        mockOffsetSize(600, 600);
+        const { container, getByTestId, getAllByTestId } = render(
+            <Grid
+                title={mockTitle}
+                gridHeight={mockGridHeight}
+                gridWidth={mockGridWidth}
+                gridData={data}
+                idAttribute="travelId"
+                paginationType="index"
+                pageInfo={pageInfo}
+                loadMoreData={mockLoadMoreData}
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 onGridRefresh={mockGridRefresh}
                 CustomPanel={mockCustomPanel}
@@ -1009,29 +875,16 @@ describe("render Index file ", () => {
         const gridContainer = container;
         expect(gridContainer).toBeInTheDocument();
 
-        const selectRowCheckbox = container.querySelectorAll(
-            "input[type='checkbox']"
-        )[2];
-        act(() => {
-            selectRowCheckbox.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-
         // Apply Sort
-        const toggleGroupSortOverLay = container.querySelector(
-            "[data-testid='toggleGroupSortOverLay']"
-        );
+        const toggleGroupSortOverLay = getByTestId("toggleGroupSortOverLay");
 
         act(() => {
             toggleGroupSortOverLay.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        let sortOverlay = container.querySelector(
-            "[class='neo-grid-popover__sort']"
-        );
-        const addNewSort = sortOverlay.querySelector("[class='sort__txt']");
+        let sortOverlay = getByTestId("groupsortoverlay");
+        const addNewSort = getByTestId("addSort");
         act(() => {
             addNewSort.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
@@ -1044,18 +897,20 @@ describe("render Index file ", () => {
             );
         });
         sortOverlay = container.querySelector(
-            "[class='neo-grid-popover__sort']"
+            "[data-testid='groupsortoverlay']"
         );
         expect(sortOverlay).toBeNull();
 
+        const selectRowCheckbox = getAllByTestId("rowSelector-singleRow")[2];
+        act(() => {
+            selectRowCheckbox.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
         const selectedRowCheckboxes = container.querySelectorAll(
             "input[type='checkbox'][checked]"
         );
         expect(selectedRowCheckboxes.length).toBe(1);
-        const idCellContainerElement =
-            selectedRowCheckboxes[0].parentElement.parentElement.parentElement
-                .nextElementSibling;
-        expect(idCellContainerElement.innerHTML).toBe("0");
     });
 
     it("test display of row specific expand icon and class names", () => {
@@ -1070,7 +925,6 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 onRowUpdate={mockUpdateRowData}
-                onRowDelete={mockDeleteRowData}
                 onRowSelect={mockSelectBulkData}
                 getRowInfo={getRowInfo}
             />
@@ -1079,11 +933,9 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
 
         // Check rows with class name "disabled"
-        const totalRowsCountInThisPage = document.getElementsByClassName(
-            "table-row tr"
-        ).length;
+        const totalRowsCountInThisPage = getAllByTestId("gridrow").length;
         const totalDisabledRowsCountInThisPage = document.getElementsByClassName(
-            "table-row tr disabled"
+            "disabled"
         ).length;
         // Check if atleast 1 disabled row is present
         expect(totalDisabledRowsCountInThisPage).toBeGreaterThan(0);
@@ -1101,5 +953,50 @@ describe("render Index file ", () => {
         expect(totalExpandIconsInThisPage).toBeLessThan(
             totalRowsCountInThisPage
         );
+    });
+
+    it("test grid without passing callback function", () => {
+        mockOffsetSize(600, 600);
+        const { container, getByTestId, getAllByTestId } = render(
+            <Grid
+                title={mockTitle}
+                gridHeight={mockGridHeight}
+                gridWidth={mockGridWidth}
+                gridData={data}
+                idAttribute="travelId"
+                paginationType="index"
+                pageInfo={pageInfo}
+                loadMoreData={mockLoadMoreData}
+                columns={gridColumns}
+                columnToExpand={mockAdditionalColumn}
+                rowActions={mockRowActions}
+            />
+        );
+        const gridContainer = container;
+
+        // Check if Grid id rendered.
+        expect(gridContainer).toBeInTheDocument();
+
+        // Cell edit
+        const editButton = getAllByTestId("cell-edit-icon");
+        act(() => {
+            editButton[0].dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        const flightNoInput = getByTestId("flightnoinput");
+        expect(flightNoInput.value).toBe("XX2225");
+        fireEvent.change(flightNoInput, { target: { value: "123" } });
+        const setState = jest.fn(() => editedRowValue);
+        const useStateSpy = jest.spyOn(React, "useState");
+        useStateSpy.mockImplementation(() => [editedRowValue, setState]);
+        fireEvent.click(getByTestId("cell-edit-save"));
+
+        const selectRowCheckbox = getAllByTestId("rowSelector-singleRow")[4];
+        act(() => {
+            selectRowCheckbox.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
     });
 });

@@ -3,35 +3,25 @@
     @return #{$remSize}rem;
 }
 
-.grid-component-container {
+.neo-grid {
     color: var(--text-light);
-    font-family: $font-family;
     font-size: rem(12);
-    ::placeholder {
-        color: var(--placeholder);
-    }
-    ::-ms-input-placeholder {
-        color: var(--placeholder);
-    }
-    ::-ms-input-placeholder {
-        color: var(--placeholder);
-    }
-    .error {
+    .ng-error {
+        margin-top: 20px;
         color: var(--danger);
+        width: 100%;
+        text-align: center;
     }
-    .txt {
+    .ng-txt {
         height: rem(32);
         border-radius: 3px;
-        padding: 1px 0 0 3px;
+        padding: 1px 0 0 4px;
         font-size: rem(12);
         color: #000;
         border: var(--border-grey) solid 1px;
         box-sizing: border-box;
-    }
-    input[type="checkbox"].custom-checkbox.custom-checkbox {
-        margin-bottom: 0;
-    }
-    .form-check {
-        height: auto;
+        &::placeholder {
+            color: var(--placeholder);
+        }
     }
 }

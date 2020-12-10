@@ -1,11 +1,13 @@
-export const updatedActionsHeaderClass = () => {
-    const tableContainerList = document.getElementsByClassName(
-        "tableContainer__List"
-    );
-    if (tableContainerList && tableContainerList.length > 0) {
-        const tableContainer = tableContainerList[0];
-        const tableHeaders = document.getElementsByClassName("table-row--head");
-        if (tableHeaders && tableHeaders.length > 0) {
+export const updatedActionsHeaderClass = (isDesktop) => {
+    if (isDesktop) {
+        const tableContainerList = document.getElementsByClassName(
+            "neo-grid__tbody-list"
+        );
+        if (tableContainerList && tableContainerList.length > 0) {
+            const tableContainer = tableContainerList[0];
+            const tableHeaders = document.getElementsByClassName(
+                "neo-grid__thead"
+            );
             const tableHeader = tableHeaders[0];
             if (tableContainer.offsetHeight < tableContainer.scrollHeight) {
                 if (!tableHeader.classList.contains("withScroll")) {
@@ -18,7 +20,7 @@ export const updatedActionsHeaderClass = () => {
     }
 };
 
-export const findSelectedRows = (rows, selectedRowIds) => {
+export const findSelectedRows = (rows, selectedRowIds, getRowInfo) => {
     const rowsSelectedByUser = [];
     if (rows && rows.length > 0 && selectedRowIds) {
         Object.entries(selectedRowIds).forEach((objEntry) => {
@@ -27,12 +29,23 @@ export const findSelectedRows = (rows, selectedRowIds) => {
                 const isSelected = objEntry[1];
                 if (isSelected) {
                     const selectedRow = rows.find((flatRow) => {
+                        if (getRowInfo && typeof getRowInfo === "function") {
+                            const rowInfo = getRowInfo(flatRow.original);
+                            return (
+                                !(
+                                    rowInfo && rowInfo.isRowSelectable === false
+                                ) && flatRow.id === rowId
+                            );
+                        }
                         return flatRow.id === rowId;
                     });
                     if (selectedRow) {
                         const { original } = selectedRow;
                         if (original) {
-                            rowsSelectedByUser.push(original);
+                            const { isParent } = original;
+                            if (isParent !== true) {
+                                rowsSelectedByUser.push(original);
+                            }
                         }
                     }
                 }
@@ -46,7 +59,10 @@ export const findSelectedRowIdAttributes = (selectedRows, idAttribute) => {
     const rowIdentifiers = [];
     if (selectedRows && selectedRows.length > 0 && idAttribute) {
         selectedRows.forEach((row) => {
-            rowIdentifiers.push(row[idAttribute]);
+            const rowIdValue = row[idAttribute];
+            if (rowIdValue !== null && rowIdValue !== undefined) {
+                rowIdentifiers.push(rowIdValue);
+            }
         });
     }
     return rowIdentifiers;
@@ -73,6 +89,34 @@ export const findSelectedRowIdFromIdAttribute = (
         }
     }
     return null;
+};
+
+export const findDeSelectedRows = (
+    selectedRows,
+    oldUserSelectedRowIdentifiers,
+    currentUserSelectedRowIdentifiers,
+    idAttribute
+) => {
+    const deSelectedRows = [];
+    if (
+        selectedRows &&
+        selectedRows.length > 0 &&
+        oldUserSelectedRowIdentifiers &&
+        oldUserSelectedRowIdentifiers.length > 0 &&
+        idAttribute
+    ) {
+        oldUserSelectedRowIdentifiers.forEach((oldAttr) => {
+            if (!currentUserSelectedRowIdentifiers.includes(oldAttr)) {
+                const deSelectedRow = selectedRows.find((row) => {
+                    return row.original[idAttribute] === oldAttr;
+                });
+                if (deSelectedRow && deSelectedRow.original) {
+                    deSelectedRows.push(deSelectedRow.original);
+                }
+            }
+        });
+    }
+    return deSelectedRows;
 };
 
 export const convertToIndividualColumns = (managableColumns) => {
@@ -112,4 +156,21 @@ export const checkIfGroupsortIsApplicable = (columns) => {
         return true;
     }
     return false;
+};
+
+export const findAllChildRows = (allRows) => {
+    if (allRows && allRows.length > 0) {
+        return allRows.filter((row) => {
+            let returnValue = false;
+            if (row) {
+                const { original } = row;
+                if (original) {
+                    const { isParent } = original;
+                    returnValue = isParent !== true;
+                }
+            }
+            return returnValue;
+        });
+    }
+    return [];
 };

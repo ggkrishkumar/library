@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import React from "react";
-import { render, cleanup, fireEvent } from "@testing-library/react";
+import { render, cleanup } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import "@testing-library/jest-dom/extend-expect";
 import Grid from "../src/index";
@@ -29,7 +29,10 @@ describe("Reference test cases", () => {
             disableFilters: true
         },
         {
-            Header: "Flight",
+            Header: () => {
+                return <span className="flightHeader">Flight</span>;
+            },
+            title: "Flight",
             accessor: "flight",
             width: 100,
             innerCells: [
@@ -308,58 +311,10 @@ describe("Reference test cases", () => {
         return rowHeight;
     });
 
-    // Mock function to return edit overlay for Grid
-    const mockGetRowEditOverlay = jest.fn(
-        (rowData, DisplayTag, rowUpdateCallBack) => {
-            const { flight } = rowData;
-            const updateRowValue = () => {
-                flight.flightno = "007";
-                rowUpdateCallBack(rowData);
-            };
-            return (
-                <div className="row-edit">
-                    <div className="edit-flight">
-                        <DisplayTag columnKey="flight" cellKey="flightno">
-                            <div className="edit-flight-no">
-                                <input
-                                    type="text"
-                                    data-testid="rowEditOverlay-Flightno"
-                                    value={flight.flightno}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                        <DisplayTag columnKey="flight" cellKey="date">
-                            <div className="edit-flight-date">
-                                <input
-                                    type="date"
-                                    value={flight.date}
-                                    onChange={updateRowValue}
-                                />
-                            </div>
-                        </DisplayTag>
-                    </div>
-                </div>
-            );
-        }
-    );
+    // Return row actions to be displayed in the Kebab menu of Grid
+    const mockRowActions = jest.fn();
 
-    // Row actions to be displayed in the Kebab menu of Grid
-    // Edit and Delete will work internally and for the rest additional row action, need a callback function
-    const mockRowActions = [
-        { label: "edit" },
-        { label: "delete" },
-        { label: "Send SCR", value: "SCR" },
-        { label: "Segment Summary", value: "SegmentSummary" },
-        { label: "Open Summary", value: "OpenSummary" },
-        { label: "Close Summary", value: "CloseSummary" }
-    ];
-    // Callback function for additional row actions
-    const mockRowActionCallback = jest.fn();
-
-    // Callback functions for row edit, cell edit, row delete, row select and grid refresh
     const mockOnRowUpdate = jest.fn();
-    const mockOnRowDelete = jest.fn();
     const mockOnRowSelect = jest.fn();
     const mockLoadMoreData = jest.fn();
 
@@ -385,7 +340,6 @@ describe("Reference test cases", () => {
                 columns={gridColumns}
                 calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
-                onRowDelete={mockOnRowDelete}
                 onRowSelect={mockOnRowSelect}
             />
         );
@@ -407,7 +361,6 @@ describe("Reference test cases", () => {
                 columnToExpand={mockAdditionalColumn}
                 calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
-                onRowDelete={mockOnRowDelete}
                 onRowSelect={mockOnRowSelect}
             />
         );
@@ -436,7 +389,6 @@ describe("Reference test cases", () => {
                 columns={gridColumns}
                 calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
-                onRowDelete={mockOnRowDelete}
                 onRowSelect={mockOnRowSelect}
             />
         );
@@ -472,104 +424,34 @@ describe("Reference test cases", () => {
                 columns={gridColumns}
                 calculateRowHeight={mockCalculateRowHeight}
                 rowActions={mockRowActions}
-                rowActionCallback={mockRowActionCallback}
-                getRowEditOverlay={mockGetRowEditOverlay}
                 onRowUpdate={mockOnRowUpdate}
-                onRowDelete={mockOnRowDelete}
                 onRowSelect={mockOnRowSelect}
             />
         );
         const gridContainer = container;
         expect(gridContainer).toBeInTheDocument();
 
-        // Open actions overlay to test Edit row
-        let rowActionOpenLinks = getAllByTestId("rowActions-open-link");
+        // Open actions overlay
+        const rowActionOpenLinks = getAllByTestId("rowActions-open-link");
         act(() => {
             rowActionOpenLinks[0].dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
         // Check if row actions overlay has been opened
-        let rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
+        const rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
         expect(rowActionsOverlay).toBeInTheDocument();
-        // Click edit link
-        const editActionLink = getByTestId("rowAction-editRow");
+        // Click close button
+        const closeButton = getByTestId("close-rowActions-kebab-overlay");
         act(() => {
-            editActionLink.dispatchEvent(
+            closeButton.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
-        // Check if edit row overlay is bind
-        expect(mockGetRowEditOverlay).toBeCalledTimes(1);
-        const rowEditOverlayContainer = getByTestId("rowEditOverlay-container");
-        expect(rowEditOverlayContainer).toBeInTheDocument();
-        // Find an input element from edit overlay and change the value
-        const input = getByTestId("rowEditOverlay-Flightno");
-        fireEvent.change(input, { target: { value: "ABC1178" } });
-        // Click on the save button of row edit overlay
-        const rowEditOverlaySaveButton = getByTestId("rowEditOverlay-save");
-        act(() => {
-            rowEditOverlaySaveButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Row update call back should be called once.
-        expect(mockOnRowUpdate).toBeCalledTimes(1);
-
-        // Open overlay to test Delete row
-        rowActionOpenLinks = getAllByTestId("rowActions-open-link");
-        act(() => {
-            rowActionOpenLinks[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Check if row actions overlay has been opened
-        rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
-        expect(rowActionsOverlay).toBeInTheDocument();
-        // Find and click delete link
-        const deleteActionLink = getByTestId("rowAction-deleteRow");
-        act(() => {
-            deleteActionLink.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Check if edit row overlay is bind
-        const rowDeleteOverlayContainer = getByTestId(
-            "rowDeleteOverlay-container"
+        // Check if overlay has been closed
+        const overlayContainer = container.getElementsByClassName(
+            "row-options-overlay"
         );
-        expect(rowDeleteOverlayContainer).toBeInTheDocument();
-        // Click on the Delete button of row delete overlay
-        const rowDeleteOverlaySaveButton = getByTestId(
-            "rowDeleteOverlay-Delete"
-        );
-        act(() => {
-            rowDeleteOverlaySaveButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Row update call back should be called once.
-        expect(mockOnRowDelete).toBeCalledTimes(1);
-
-        // Open overlay to test additional action
-        rowActionOpenLinks = getAllByTestId("rowActions-open-link");
-        act(() => {
-            rowActionOpenLinks[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Check if row actions overlay has been opened
-        rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
-        expect(rowActionsOverlay).toBeInTheDocument();
-        // Find and click additional action item
-        const additionalActionLinks = getAllByTestId(
-            "rowAction-additionalAction"
-        );
-        act(() => {
-            additionalActionLinks[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Additional row action call back should be called once.
-        expect(mockRowActionCallback).toBeCalledTimes(1);
+        expect(overlayContainer.length).toBe(0);
     });
 });
