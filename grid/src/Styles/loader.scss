@@ -1,65 +1,67 @@
+@function rem($size, $base: $em-base) {
+    $remSize: $size / $em-base;
+    @return #{$remSize}rem;
+}
+
 .ng-loader {
+    width: 100%;
     display: flex;
     justify-content: center;
-    margin-bottom: rem(20);
-    &__dots-block {
-        width: rem(380);
-        padding: 20px 0 10px;
-        border: #dce1e5 solid 1px;
+    border-top: rem(1) solid var(--light-grey);
+    &__block {
+        width: rem(80);
+        height: rem(40);
+        position: relative;
         display: flex;
-        justify-content: center;
         align-items: center;
     }
-    &__dots {
-        -webkit-transition: all 6000ms ease;
-        transition: all 6000ms ease;
-        background: rgba(96, 116, 136, 0.5);
-        height: 8px;
-        width: 8px;
-        margin: 0 2px 0 0;
-        display: inline-block;
+    &__item {
+        position: absolute;
+        width: rem(13);
+        height: rem(13);
         border-radius: 50%;
-        animation: wave 2s ease infinite;
-        -webkit-animation: wave 2s ease infinite;
+        background: var(--text-light);
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
         &:nth-child(1) {
-            animation-delay: 0;
-            -webkit-animation-delay: 0;
+            left: rem(8);
+            animation: lds-ellipsis1 0.6s infinite;
         }
         &:nth-child(2) {
-            animation-delay: 100ms;
-            -webkit-animation-delay: 100ms;
+            left: rem(8);
+            animation: lds-ellipsis2 0.6s infinite;
         }
         &:nth-child(3) {
-            animation-delay: 200ms;
-            -webkit-animation-delay: 200ms;
+            left: rem(32);
+            animation: lds-ellipsis2 0.6s infinite;
+        }
+        &:nth-child(4) {
+            left: rem(56);
+            animation: lds-ellipsis3 0.6s infinite;
         }
     }
-    @-webkit-keyframes wave {
-        0%,
-        40%,
-        100% {
-            -webkit-transform: translate(0, 0);
-            transform: translate(0, 0);
-            background-color: rgba(96, 116, 136, 0.5);
+
+    @keyframes lds-ellipsis1 {
+        0% {
+            transform: scale(0);
         }
-        10% {
-            -webkit-transform: translate(0, -15px);
-            transform: translate(0, -15px);
-            background-color: rgba(96, 116, 136, 1);
+        100% {
+            transform: scale(1);
         }
     }
-    @keyframes wave {
-        0%,
-        40%,
-        100% {
-            -webkit-transform: translate(0, 0);
-            transform: translate(0, 0);
-            background-color: rgba(96, 116, 136, 0.5);
+    @keyframes lds-ellipsis3 {
+        0% {
+            transform: scale(1);
         }
-        10% {
-            -webkit-transform: translate(0, -15px);
-            transform: translate(0, -15px);
-            background-color: rgba(96, 116, 136, 1);
+        100% {
+            transform: scale(0);
+        }
+    }
+    @keyframes lds-ellipsis2 {
+        0% {
+            transform: translate(0, 0);
+        }
+        100% {
+            transform: translate(24px, 0);
         }
     }
 }

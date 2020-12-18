@@ -69,7 +69,6 @@ const Grid = (props) => {
         className,
         theme,
         title,
-        gridHeight,
         gridWidth,
         gridData,
         rowsToOverscan,
@@ -101,6 +100,7 @@ const Grid = (props) => {
         onGridRefresh,
         rowsToSelect,
         rowsToDeselect,
+        fixedRowHeight,
         fileName
     } = props;
 
@@ -470,7 +470,6 @@ const Grid = (props) => {
                 <Customgrid
                     isDesktop={isDesktop}
                     title={title}
-                    gridHeight={gridHeight}
                     theme={theme}
                     managableColumns={gridColumns}
                     expandedRowData={additionalColumn}
@@ -513,16 +512,8 @@ const Grid = (props) => {
                     onGridRefresh={onGridRefresh}
                     rowsToSelect={rowsToSelect}
                     rowsToDeselect={rowsToDeselect}
+                    fixedRowHeight={fixedRowHeight}
                 />
-                {isNextPageLoading ? (
-                    <div className="ng-loader">
-                        <div className="ng-loader__dots-block">
-                            <span className="ng-loader__dots" />
-                            <span className="ng-loader__dots" />
-                            <span className="ng-loader__dots" />
-                        </div>
-                    </div>
-                ) : null}
             </div>
         );
     }
@@ -533,7 +524,6 @@ Grid.propTypes = {
     className: PropTypes.string,
     theme: PropTypes.string,
     title: PropTypes.string,
-    gridHeight: PropTypes.string,
     gridWidth: PropTypes.string,
     columns: PropTypes.arrayOf(PropTypes.object),
     columnToExpand: PropTypes.object,
@@ -565,6 +555,7 @@ Grid.propTypes = {
     onGridRefresh: PropTypes.func,
     rowsToSelect: PropTypes.array,
     rowsToDeselect: PropTypes.array,
+    fixedRowHeight: PropTypes.bool,
     fileName: PropTypes.string
 };
 

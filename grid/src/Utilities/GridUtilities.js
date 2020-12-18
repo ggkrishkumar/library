@@ -10,9 +10,7 @@ export const updatedActionsHeaderClass = (isDesktop) => {
             );
             const tableHeader = tableHeaders[0];
             if (tableContainer.offsetHeight < tableContainer.scrollHeight) {
-                if (!tableHeader.classList.contains("withScroll")) {
-                    tableHeader.classList.add("withScroll");
-                }
+                tableHeader.classList.add("withScroll");
             } else {
                 tableHeader.classList.remove("withScroll");
             }
@@ -41,11 +39,9 @@ export const findSelectedRows = (rows, selectedRowIds, getRowInfo) => {
                     });
                     if (selectedRow) {
                         const { original } = selectedRow;
-                        if (original) {
-                            const { isParent } = original;
-                            if (isParent !== true) {
-                                rowsSelectedByUser.push(original);
-                            }
+                        const { isParent } = original;
+                        if (isParent !== true) {
+                            rowsSelectedByUser.push(original);
                         }
                     }
                 }
@@ -164,10 +160,8 @@ export const findAllChildRows = (allRows) => {
             let returnValue = false;
             if (row) {
                 const { original } = row;
-                if (original) {
-                    const { isParent } = original;
-                    returnValue = isParent !== true;
-                }
+                const { isParent } = original;
+                returnValue = isParent !== true;
             }
             return returnValue;
         });

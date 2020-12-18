@@ -75,7 +75,7 @@ const CellDisplayAndEdit = ({
                             onClick={openEdit}
                         >
                             <i>
-                                <IconPencil />
+                                <IconPencil className="ng-icon" />
                             </i>
                         </div>
                     ) : null}
@@ -93,7 +93,7 @@ const CellDisplayAndEdit = ({
                                 data-testid="cell-edit-save"
                                 onClick={saveEdit}
                             >
-                                <IconTick />
+                                <IconTick className="ng-icon ng-icon--tick" />
                             </button>
                             <button
                                 type="button"
@@ -102,7 +102,7 @@ const CellDisplayAndEdit = ({
                                 data-testid="cell-edit-cancel"
                                 onClick={closeEdit}
                             >
-                                <IconCancel />
+                                <IconCancel className="ng-icon" />
                             </button>
                         </div>
                     ) : null}

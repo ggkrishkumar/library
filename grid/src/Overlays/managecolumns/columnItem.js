@@ -2,7 +2,7 @@ import React from "react";
 import { useDrag, useDrop } from "react-dnd";
 import PropTypes from "prop-types";
 import { ItemTypes } from "./ItemTypes";
-import { IconJustify } from "../../Utilities/SvgUtilities";
+import { IconDragHorizontal } from "../../Utilities/SvgUtilities";
 import GroupedColumnItem from "./groupedColumnItem";
 
 const ColumnItem = ({
@@ -61,7 +61,7 @@ const ColumnItem = ({
                     className="ng-popover--column__drag"
                 >
                     <i>
-                        <IconJustify />
+                        <IconDragHorizontal className="ng-icon" />
                     </i>
                 </div>
                 <span>{columnTitle || columnHeader}</span>

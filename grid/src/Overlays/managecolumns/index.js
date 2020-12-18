@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
 import update from "immutability-helper";
 import ColumnSearch from "../common/columnsSearch";
 import ColumnsList from "./columnsList";
-import { IconClose } from "../../Utilities/SvgUtilities";
+import { IconCancel } from "../../Utilities/SvgUtilities";
 
 const ColumnReordering = (props) => {
     const {
@@ -319,11 +319,14 @@ const ColumnReordering = (props) => {
                             onClick={toggleManageColumnsOverlay}
                         >
                             <i>
-                                <IconClose />
+                                <IconCancel className="ng-icon" />
                             </i>
                         </div>
                     </div>
                     <div className="ng-popover--column__body">
+                        <div className="ng-popover--column__head">
+                            Parent Column
+                        </div>
                         <DndProvider
                             backend={MultiBackend}
                             options={HTML5toTouch}
@@ -335,92 +338,95 @@ const ColumnReordering = (props) => {
                             />
                         </DndProvider>
                         {isAdditionalColumnSelected ? (
-                            <div
-                                className="ng-popover--column__reorder is-full-width"
-                                data-testid="additional-column-box"
-                            >
-                                <div className="ng-popover--column__reorder-head">
-                                    {additionalColumnHeader}
+                            <>
+                                <div className="ng-popover--column__head">
+                                    Additional Data ( Expand View)
                                 </div>
-                                <div className="ng-popover--column__list">
-                                    {managedAdditionalColumnInnercells.map(
-                                        (cell) => {
-                                            const {
-                                                cellId,
-                                                Header,
-                                                display
-                                            } = cell;
-                                            return (
-                                                <div
-                                                    className="ng-popover--column__wrap"
-                                                    key={`${cellId}`}
-                                                >
-                                                    <div className="ng-popover--column__check">
-                                                        <div className="neo-form-check">
-                                                            <input
-                                                                type="checkbox"
-                                                                id={`chk_selectInnerCell_${cellId}`}
-                                                                className="neo-checkbox form-check-input"
-                                                                data-testid={`selectInnerCell_${managedAdditionalColumnColumnId}_${cellId}`}
-                                                                data-columnid={
-                                                                    managedAdditionalColumnColumnId
-                                                                }
-                                                                data-cellid={
-                                                                    cellId
-                                                                }
-                                                                data-isadditionalcolumn={
-                                                                    managedAdditionalColumnDisplayType
-                                                                }
-                                                                checked={
-                                                                    display
-                                                                }
-                                                                onChange={
-                                                                    onInnerCellChange
-                                                                }
-                                                            />
-                                                            <label
-                                                                htmlFor={`chk_selectInnerCell_${cellId}`}
-                                                                className="neo-form-check__label"
-                                                            >
-                                                                {Header}
-                                                            </label>
+                                <div
+                                    className="ng-popover--column__reorder is-full-width"
+                                    data-testid="additional-column-box"
+                                >
+                                    <div className="ng-popover--column__reorder-head">
+                                        {additionalColumnHeader}
+                                    </div>
+                                    <div className="ng-popover--column__list">
+                                        {managedAdditionalColumnInnercells.map(
+                                            (cell) => {
+                                                const {
+                                                    cellId,
+                                                    Header,
+                                                    display
+                                                } = cell;
+                                                return (
+                                                    <div
+                                                        className="ng-popover--column__wrap"
+                                                        key={`${cellId}`}
+                                                    >
+                                                        <div className="ng-popover--column__check">
+                                                            <div className="neo-form-check">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`chk_selectInnerCell_${cellId}`}
+                                                                    className="neo-checkbox form-check-input"
+                                                                    data-testid={`selectInnerCell_${managedAdditionalColumnColumnId}_${cellId}`}
+                                                                    data-columnid={
+                                                                        managedAdditionalColumnColumnId
+                                                                    }
+                                                                    data-cellid={
+                                                                        cellId
+                                                                    }
+                                                                    data-isadditionalcolumn={
+                                                                        managedAdditionalColumnDisplayType
+                                                                    }
+                                                                    checked={
+                                                                        display
+                                                                    }
+                                                                    onChange={
+                                                                        onInnerCellChange
+                                                                    }
+                                                                />
+                                                                <label
+                                                                    htmlFor={`chk_selectInnerCell_${cellId}`}
+                                                                    className="neo-form-check__label"
+                                                                >
+                                                                    {Header}
+                                                                </label>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
-                                    )}
+                                                );
+                                            }
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         ) : null}
                     </div>
-                    <div className="ng-popover--column__footer">
-                        <div className="ng-popover--column__btns">
-                            <button
-                                type="button"
-                                className="neo-btn neo-btn-default btn btn-secondary"
-                                data-testid="reset_columnsManage"
-                                onClick={resetColumnUpdate}
-                            >
-                                Reset
-                            </button>
-                            <button
-                                type="button"
-                                className="neo-btn neo-btn-default btn btn-secondary"
-                                data-testid="cancel_columnsManage"
-                                onClick={toggleManageColumnsOverlay}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                className="neo-btn neo-btn-primary btn btn-secondary"
-                                data-testid="save_columnsManage"
-                                onClick={onColumnChooserSave}
-                            >
-                                Save
-                            </button>
-                        </div>
+                    <div className="ng-popover__footer">
+                        <button
+                            type="button"
+                            className="neo-btn neo-btn-default btn btn-secondary"
+                            data-testid="reset_columnsManage"
+                            onClick={resetColumnUpdate}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            type="button"
+                            className="neo-btn neo-btn-default btn btn-secondary"
+                            data-testid="cancel_columnsManage"
+                            onClick={toggleManageColumnsOverlay}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            className="neo-btn neo-btn-primary btn btn-secondary"
+                            data-testid="save_columnsManage"
+                            onClick={onColumnChooserSave}
+                        >
+                            Save
+                        </button>
                     </div>
                 </div>
             </ClickAwayListener>

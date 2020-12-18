@@ -268,11 +268,6 @@ const GridComponent = () => {
         };
     };
 
-    const calculateRowHeight = (row, gridColumns) => {
-        // Calculate the hight of a row using the row data and the columns width and return an integer value.
-        return 80;
-    };
-
     // Call back made by Grid for each row, to display the row actions in Kebab overlay in Grid.
     const rowActions = (rowData, closeOverlay) => {
         // Grid will call this function for all rows while binding data on to Grid.
@@ -388,6 +383,10 @@ const GridComponent = () => {
     // All other themes will have default stylings.
     const theme = "portal"
 
+    // If all rows of Grid requires same height, Grid will measure height of only first row.
+    // And then uses this row height for all other rows.
+    const fixedRowHeight = true;
+
     // Pass this function as a prop to Grid, then Grid will callback this function if user has selected group sorting
     const serverSideSorting = (groupSortOptions) => {
         // Sort grid data ( or, child data of each parent in case of tree view) based on the sort parameters passed in.
@@ -418,7 +417,6 @@ const GridComponent = () => {
             className="icargoCustomClass"
             theme={theme}
             title="AWBs"
-            gridHeight="80vh"
             gridWidth="100%"
             gridData={gridData} // *Required
             rowsToOverscan={rowsToOverscan}
@@ -434,7 +432,6 @@ const GridComponent = () => {
             parentRowExpandable={parentRowExpandable} // Only for tree view
             parentRowsToExpand={parentRowsToExpand} // Only for tree view
             rowActions={rowActions}
-            calculateRowHeight={calculateRowHeight} // *Required
             expandableColumn={expandableColumn}
             onRowUpdate={onRowUpdate}
             onRowSelect={onRowSelect}
@@ -443,6 +440,7 @@ const GridComponent = () => {
             CustomPanel={CustomPanel}
             rowsToSelect={rowsToSelect}
             rowsToDeselect={rowsToDeselect}
+            fixedRowHeight={fixedRowHeight}
             multiRowSelection={multiRowSelection}
             gridHeader={gridHeader}
             rowSelector={rowSelector}
@@ -472,7 +470,6 @@ const GridComponent = () => {
     className="icargoCustomClass"
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -491,7 +488,6 @@ const GridComponent = () => {
     theme={theme}
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -510,26 +506,6 @@ const GridComponent = () => {
     title="AWBs"
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
-    onRowUpdate={onRowUpdate}
-    onRowSelect={onRowSelect}
-/>
-```
-
-#### With custom grid height
-
-<Story name="With custom height">
-    <GridComponent gridHeight="80vh" />;
-</Story>
-
-```jsx
-// Grid height will be '80vh' of the screen.
-
-<Grid
-    gridHeight="80vh"
-    gridData={gridData}
-    columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -548,7 +524,25 @@ const GridComponent = () => {
     gridWidth="75%"
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+/>
+```
+
+#### With fixed row size
+
+<Story name="With fixed row size">
+    <GridComponent fixedRowHeight />;
+</Story>
+
+```jsx
+// All rows will have same height (height of first row).
+
+<Grid
+    title="AWBs"
+    gridData={gridData}
+    columns={columns}
+    fixedRowHeight={fixedRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -588,7 +582,6 @@ const columnToExpand = {
     gridData={gridData}
     columns={columns}
     columnToExpand={columnToExpand}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />;
@@ -607,7 +600,6 @@ const columnToExpand = {
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     expandableColumn
@@ -635,7 +627,6 @@ const rowActions = (rowData, closeOverlay) => {
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     rowActions={rowActions}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
@@ -657,7 +648,6 @@ const onGridRefresh = () => {
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     onGridRefresh={onGridRefresh}
@@ -677,7 +667,6 @@ const CustomPanel = <CustomPanel />
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     CustomPanel={CustomPanel}
@@ -698,7 +687,6 @@ const multiRowSelection = false;
     gridData={gridData}
     idAttribute={idAttribute}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     multiRowSelection={multiRowSelection}
@@ -730,7 +718,6 @@ const onRowSelect = (selectedRows, deSelectedRows) => {
     gridData={gridData}
     idAttribute={idAttribute}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     rowsToSelect={rowsToSelect}
@@ -762,7 +749,6 @@ const onRowSelect = (selectedRows, deSelectedRows) => {
     gridData={gridData}
     idAttribute={idAttribute}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     rowsToDeselect={rowsToDeselect}
@@ -809,7 +795,6 @@ const loadMoreData = (updatedPageInfo) => {
     pageInfo={gridPageInfo}
     loadMoreData={loadMoreData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />;
@@ -829,7 +814,6 @@ const loadMoreData = (updatedPageInfo) => {
     gridData={gridData}
     serverSideSorting={serverSideSorting}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -848,7 +832,6 @@ const loadMoreData = (updatedPageInfo) => {
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -867,7 +850,6 @@ const loadMoreData = (updatedPageInfo) => {
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -887,7 +869,6 @@ const loadMoreData = (updatedPageInfo) => {
     gridData={gridData}
     rowsToOverscan={20}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
 />
@@ -909,7 +890,6 @@ const loadMoreData = (updatedPageInfo) => {
     gridData={gridData}
     columns={columns}
     expandableColumn
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     getRowInfo={getRowInfo}
@@ -930,7 +910,6 @@ const gridHeader = false;
     gridData={gridData}
     idAttribute={idAttribute}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     gridHeader={gridHeader}
@@ -950,7 +929,6 @@ const rowSelector = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     rowSelector={rowSelector}
 />;
@@ -969,7 +947,6 @@ const globalSearch = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     globalSearch={globalSearch}
@@ -989,7 +966,6 @@ const columnFilter = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     columnFilter={columnFilter}
@@ -1009,7 +985,6 @@ const groupSort = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     groupSort={groupSort}
@@ -1029,7 +1004,6 @@ const columnChooser = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     columnChooser={columnChooser}
@@ -1049,7 +1023,6 @@ const exportData = false;
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     exportData={exportData}
@@ -1069,7 +1042,6 @@ const fileName="Custom filename"
 <Grid
     gridData={gridData}
     columns={columns}
-    calculateRowHeight={calculateRowHeight}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
     fileName={fileName}
@@ -1083,7 +1055,6 @@ const fileName="Custom filename"
         allProps
         className="icargoCustomClass"
         title="AWBs"
-        gridHeight="80vh"
         gridWidth="100%"
         rowsToOverscan={20}
         CustomPanel={CustomPanel}
@@ -1098,7 +1069,6 @@ const fileName="Custom filename"
 <Grid
     className={className}
     title={title}
-    gridHeight={gridHeight}
     gridWidth={gridWidth}
     gridData={gridData}
     rowsToOverscan={20}
@@ -1109,7 +1079,6 @@ const fileName="Custom filename"
     columns={columns}
     columnToExpand={columnToExpand}
     rowActions={rowActions}
-    calculateRowHeight={calculateRowHeight}
     expandableColumn={expandableColumn}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
@@ -1136,7 +1105,6 @@ const fileName="Custom filename"
         allProps
         className="icargoCustomClass"
         title="AWBs"
-        gridHeight="80vh"
         gridWidth="100%"
         rowsToOverscan={20}
         CustomPanel={CustomPanel}
@@ -1152,7 +1120,6 @@ const fileName="Custom filename"
 <Grid
     className={className}
     title={title}
-    gridHeight={gridHeight}
     gridWidth={gridWidth}
     gridData={gridData}
     rowsToOverscan={20}
@@ -1165,7 +1132,61 @@ const fileName="Custom filename"
     parentColumn={parentColumn}
     parentIdAttribute={parentIdAttribute}
     rowActions={rowActions}
-    calculateRowHeight={calculateRowHeight}
+    expandableColumn={expandableColumn}
+    onRowUpdate={onRowUpdate}
+    onRowSelect={onRowSelect}
+    getRowInfo={getRowInfo}
+    onGridRefresh={onGridRefresh}
+    CustomPanel={CustomPanel}
+    rowsToSelect={rowsToSelect}
+    rowsToDeselect={rowsToDeselect}
+    gridHeader
+    rowSelector
+    globalSearch
+    columnFilter
+    groupSort
+    columnChooser
+    exportData
+    fileName={fileName}
+/>
+```
+
+#### Tree view with fixed row height
+
+<Story name="Tree view with fixed row height">
+    <GridComponent
+        allProps
+        className="icargoCustomClass"
+        title="AWBs"
+        fixedRowHeight
+        gridWidth="100%"
+        rowsToOverscan={20}
+        CustomPanel={CustomPanel}
+        fileName="Custom filename"
+        rowsForSelection={[1, 7, 17]}
+        fileName="Custom filename"
+        treeStructure
+    />
+    ;
+</Story>
+
+```jsx
+<Grid
+    className={className}
+    title={title}
+    fixedRowHeight={fixedRowHeight}
+    gridWidth={gridWidth}
+    gridData={gridData}
+    rowsToOverscan={20}
+    idAttribute={idAttribute}
+    paginationType={paginationType}
+    pageInfo={gridPageInfo}
+    loadMoreData={loadMoreData}
+    columns={columns}
+    columnToExpand={columnToExpand}
+    parentColumn={parentColumn}
+    parentIdAttribute={parentIdAttribute}
+    rowActions={rowActions}
     expandableColumn={expandableColumn}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
@@ -1192,7 +1213,6 @@ const fileName="Custom filename"
         allProps
         className="icargoCustomClass"
         title="AWBs"
-        gridHeight="80vh"
         gridWidth="100%"
         rowsToOverscan={20}
         CustomPanel={CustomPanel}
@@ -1209,7 +1229,6 @@ const fileName="Custom filename"
 <Grid
     className={className}
     title={title}
-    gridHeight={gridHeight}
     gridWidth={gridWidth}
     gridData={gridData}
     rowsToOverscan={20}
@@ -1223,7 +1242,6 @@ const fileName="Custom filename"
     parentIdAttribute={parentIdAttribute}
     parentRowExpandable={parentRowExpandable}
     rowActions={rowActions}
-    calculateRowHeight={calculateRowHeight}
     expandableColumn={expandableColumn}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}
@@ -1250,7 +1268,6 @@ const fileName="Custom filename"
         allProps
         className="icargoCustomClass"
         title="AWBs"
-        gridHeight="80vh"
         gridWidth="100%"
         rowsToOverscan={20}
         CustomPanel={CustomPanel}
@@ -1267,7 +1284,6 @@ const fileName="Custom filename"
 <Grid
     className={className}
     title={title}
-    gridHeight={gridHeight}
     gridWidth={gridWidth}
     gridData={gridData}
     rowsToOverscan={20}
@@ -1281,7 +1297,6 @@ const fileName="Custom filename"
     parentIdAttribute={parentIdAttribute}
     parentRowsToExpand={parentRowsToExpand}
     rowActions={rowActions}
-    calculateRowHeight={calculateRowHeight}
     expandableColumn={expandableColumn}
     onRowUpdate={onRowUpdate}
     onRowSelect={onRowSelect}

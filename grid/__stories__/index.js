@@ -5,6 +5,7 @@ import Grid from "../src/index";
 import FlightIcon from "./images/FlightIcon.png";
 import { fetchData } from "./getData";
 import { getValueOfDate } from "./utils/DateUtility";
+import DetailsView from "./cells/DetailsView";
 import FlightEdit from "./cells/FlightEdit";
 import SrEdit from "./cells/SrEdit";
 import SegmentEdit from "./cells/SegmentEdit";
@@ -17,7 +18,7 @@ const GridComponent = (props) => {
         allProps,
         className,
         title,
-        gridHeight,
+        fixedRowHeight,
         gridWidth,
         rowsToOverscan,
         passColumnToExpand,
@@ -336,13 +337,16 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                return (
-                    <FlightEdit
-                        rowData={rowData}
-                        DisplayTag={DisplayTag}
-                        rowUpdateCallBack={rowUpdateCallBack}
-                    />
-                );
+                if (fixedRowHeight !== true) {
+                    return (
+                        <FlightEdit
+                            rowData={rowData}
+                            DisplayTag={DisplayTag}
+                            rowUpdateCallBack={rowUpdateCallBack}
+                        />
+                    );
+                }
+                return null;
             }
         },
         {
@@ -398,14 +402,17 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                return (
-                    <SegmentEdit
-                        airportCodeList={airportCodeList}
-                        rowData={rowData}
-                        DisplayTag={DisplayTag}
-                        rowUpdateCallBack={rowUpdateCallBack}
-                    />
-                );
+                if (fixedRowHeight !== true) {
+                    return (
+                        <SegmentEdit
+                            airportCodeList={airportCodeList}
+                            rowData={rowData}
+                            DisplayTag={DisplayTag}
+                            rowUpdateCallBack={rowUpdateCallBack}
+                        />
+                    );
+                }
+                return null;
             }
         },
         {
@@ -463,176 +470,15 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                if (rowData.details) {
-                    const {
-                        startTime,
-                        endTime,
-                        status,
-                        additionalStatus,
-                        flightModel,
-                        bodyType,
-                        type,
-                        timeStatus
-                    } = rowData.details;
-                    const timeStatusArray = timeStatus
-                        ? timeStatus.split(" ")
-                        : [];
-                    const timeValue = timeStatusArray.shift();
-                    const timeText = timeStatusArray.join(" ");
-                    if (
-                        isExpandableColumn === null ||
-                        isExpandableColumn === true
-                    ) {
-                        return (
-                            <div className="details-wrap">
-                                <ul>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="startTime"
-                                        >
-                                            {startTime}
-                                        </DisplayTag>
-                                        -
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="endTime"
-                                        >
-                                            {endTime}
-                                        </DisplayTag>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="status"
-                                        >
-                                            <span>{status}</span>
-                                        </DisplayTag>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="additionalStatus"
-                                        >
-                                            {additionalStatus}
-                                        </DisplayTag>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="flightModel"
-                                        >
-                                            {flightModel}
-                                        </DisplayTag>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="bodyType"
-                                        >
-                                            {bodyType}
-                                        </DisplayTag>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <span>
-                                            <DisplayTag
-                                                columnKey="details"
-                                                cellKey="type"
-                                            >
-                                                {type}
-                                            </DisplayTag>
-                                        </span>
-                                    </li>
-                                    <li className="divider">|</li>
-                                    <li>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="timeStatus"
-                                        >
-                                            <strong>{timeValue} </strong>
-                                            <span>{timeText}</span>
-                                        </DisplayTag>
-                                    </li>
-                                </ul>
-                            </div>
-                        );
-                    }
-                    return (
-                        <div className="details-wrap">
-                            <ul>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="startTime"
-                                    >
-                                        {startTime}
-                                    </DisplayTag>
-                                    -
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="endTime"
-                                    >
-                                        {endTime}
-                                    </DisplayTag>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="status"
-                                    >
-                                        <span>{status}</span>
-                                    </DisplayTag>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="flightModel"
-                                    >
-                                        {flightModel}
-                                    </DisplayTag>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="bodyType"
-                                    >
-                                        {bodyType}
-                                    </DisplayTag>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <span>
-                                        <DisplayTag
-                                            columnKey="details"
-                                            cellKey="type"
-                                        >
-                                            {type}
-                                        </DisplayTag>
-                                    </span>
-                                </li>
-                                <li className="divider">|</li>
-                                <li>
-                                    <DisplayTag
-                                        columnKey="details"
-                                        cellKey="timeStatus"
-                                    >
-                                        <strong>{timeValue} </strong>
-                                        <span>{timeText}</span>
-                                    </DisplayTag>
-                                </li>
-                            </ul>
-                        </div>
-                    );
-                }
-                return null;
+                return (
+                    <DetailsView
+                        rowData={rowData}
+                        DisplayTag={DisplayTag}
+                        isDesktop={isDesktop}
+                        isExpandableColumn={isExpandableColumn}
+                        fixedRowHeight={fixedRowHeight}
+                    />
+                );
             }
         },
         {
@@ -867,12 +713,15 @@ const GridComponent = (props) => {
                 isDesktop,
                 isExpandableColumn
             ) => {
-                return (
-                    <SrEdit
-                        rowData={rowData}
-                        rowUpdateCallBack={rowUpdateCallBack}
-                    />
-                );
+                if (fixedRowHeight !== true) {
+                    return (
+                        <SrEdit
+                            rowData={rowData}
+                            rowUpdateCallBack={rowUpdateCallBack}
+                        />
+                    );
+                }
+                return null;
             }
         },
         {
@@ -1006,48 +855,6 @@ const GridComponent = (props) => {
         }
     };
     const [parentColumn, setParentColumn] = useState(null);
-
-    const calculateRowHeight = (row, gridColumns) => {
-        // Minimum height for each row
-        let rowHeight = 50;
-        if (gridColumns && gridColumns.length > 0 && row) {
-            // Get properties of a row
-            const { original, isExpanded } = row;
-            // Find the column with maximum width configured, from grid columns list
-            const columnWithMaxWidth = [...gridColumns].sort((a, b) => {
-                return b.width - a.width;
-            })[0];
-            // Get column properties including the user resized column width (totalFlexWidth)
-            const { id, width, totalFlexWidth } = columnWithMaxWidth;
-            // Get row value of that column
-            const rowValue = original[id];
-            if (rowValue) {
-                // Find the length of text of data in that column
-                const textLength = Object.values(rowValue).join(",").length;
-                // This is a formula that was created for the test data used.
-                rowHeight += Math.ceil((80 * textLength) / totalFlexWidth);
-                const widthVariable =
-                    totalFlexWidth > width
-                        ? totalFlexWidth - width
-                        : width - totalFlexWidth;
-                rowHeight += widthVariable / 1000;
-            }
-            // Add logic to increase row height if row is expanded
-            if (
-                isExpanded &&
-                (passColumnToExpand || allProps) &&
-                columnToExpand
-            ) {
-                // Increase height based on the number of inner cells in additional columns
-                rowHeight +=
-                    columnToExpand.innerCells &&
-                    columnToExpand.innerCells.length > 0
-                        ? columnToExpand.innerCells.length * 35
-                        : 35;
-            }
-        }
-        return rowHeight;
-    };
 
     const updateData = (data, originalRow, updatedRow) => {
         return data.map((row) => {
@@ -1275,6 +1082,7 @@ const GridComponent = (props) => {
         return (
             <RowAction
                 rowData={rowData}
+                fixedRowHeight={fixedRowHeight}
                 closeOverlay={closeOverlay}
                 bindRowEditOverlay={bindRowEditOverlay}
                 bindRowDeleteOverlay={bindRowDeleteOverlay}
@@ -1426,15 +1234,15 @@ const GridComponent = (props) => {
 
     useEffect(() => {
         if (treeStructure) {
+            setParentColumn(originalParentColumn);
+            setIndexPageInfo(null);
+            setCursorPageInfo(null);
             if (
                 parentRowExpandable !== false &&
                 isParentExpandedByDefault !== true
             ) {
                 setGridData(parentData);
                 setOriginalGridData(parentData);
-                setIndexPageInfo(null);
-                setCursorPageInfo(null);
-                setParentColumn(originalParentColumn);
             } else {
                 const newPageSize = 5;
                 const newGridData = [...parentData];
@@ -1472,9 +1280,6 @@ const GridComponent = (props) => {
                                     }
                                     setGridData(newGridData);
                                     setOriginalGridData(newGridData);
-                                    setIndexPageInfo(null);
-                                    setCursorPageInfo(null);
-                                    setParentColumn(originalParentColumn);
                                 });
                             }
                         );
@@ -1562,7 +1367,7 @@ const GridComponent = (props) => {
 
     if (gridData && gridData.length > 0 && columns && columns.length > 0) {
         return (
-            <div className={passTheme ? "sample-bg" : ""}>
+            <div className={`screen-container ${passTheme ? "sample-bg" : ""}`}>
                 <div className="selectedRows">
                     {userSelectedRows.map((row) => {
                         return (
@@ -1602,7 +1407,6 @@ const GridComponent = (props) => {
                     className={className}
                     theme={passTheme ? theme : null}
                     title={title}
-                    gridHeight={gridHeight}
                     gridWidth={gridWidth}
                     gridData={gridData}
                     rowsToOverscan={rowsToOverscan}
@@ -1617,7 +1421,10 @@ const GridComponent = (props) => {
                     }
                     columns={columns}
                     columnToExpand={
-                        allProps || passColumnToExpand ? columnToExpand : null
+                        (allProps && fixedRowHeight !== true) ||
+                        passColumnToExpand
+                            ? columnToExpand
+                            : null
                     }
                     parentColumn={treeStructure ? parentColumn : null}
                     parentIdAttribute={treeStructure ? parentIdAttribute : null}
@@ -1632,8 +1439,10 @@ const GridComponent = (props) => {
                             : null
                     }
                     rowActions={allProps || passRowActions ? rowActions : null}
-                    calculateRowHeight={calculateRowHeight}
-                    expandableColumn={allProps || expandableColumn}
+                    expandableColumn={
+                        (allProps && fixedRowHeight !== true) ||
+                        expandableColumn
+                    }
                     onRowUpdate={onRowUpdate}
                     onRowSelect={onRowSelect}
                     getRowInfo={allProps || passGetRowInfo ? getRowInfo : null}
@@ -1643,6 +1452,7 @@ const GridComponent = (props) => {
                     CustomPanel={CustomPanel}
                     rowsToSelect={rowsToSelect}
                     rowsToDeselect={rowsToDeselect}
+                    fixedRowHeight={fixedRowHeight}
                     multiRowSelection={multiRowSelection}
                     gridHeader={allProps || gridHeader}
                     rowSelector={allProps || rowSelector}

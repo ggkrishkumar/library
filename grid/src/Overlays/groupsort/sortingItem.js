@@ -3,7 +3,11 @@ import { useDrag, useDrop } from "react-dnd";
 import PropTypes from "prop-types";
 import { ItemTypes } from "./ItemTypes";
 
-import { IconNav, SortCopy, SortDelete } from "../../Utilities/SvgUtilities";
+import {
+    IconDragVertical,
+    SortCopy,
+    SortDelete
+} from "../../Utilities/SvgUtilities";
 
 const SortItem = ({
     id,
@@ -110,8 +114,8 @@ const SortItem = ({
                     ref={(node) => drag(drop(node))}
                     style={{ cursor: "move" }}
                 >
-                    <i>
-                        <IconNav />
+                    <i className="ng-icon-block">
+                        <IconDragVertical className="ng-icon" />
                     </i>
                 </div>
             </div>
@@ -201,7 +205,7 @@ const SortItem = ({
                     onClick={copySort}
                 >
                     <i>
-                        <SortCopy />
+                        <SortCopy className="ng-icon" />
                     </i>
                 </div>
             </div>
@@ -213,7 +217,7 @@ const SortItem = ({
                     onClick={deleteSort}
                 >
                     <i>
-                        <SortDelete />
+                        <SortDelete className="ng-icon" />
                     </i>
                 </div>
             </div>

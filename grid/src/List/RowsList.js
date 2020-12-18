@@ -1,6 +1,6 @@
 /* eslint-disable prefer-destructuring */
 /* eslint-disable no-param-reassign */
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { VariableSizeList as List } from "react-window";
 import PropTypes from "prop-types";
 import ListItem from "./ListItem";
@@ -29,51 +29,74 @@ const RowsList = ({
     additionalColumn,
     getRowInfo,
     expandedParentRows,
-    reRenderListData
+    reRenderListData,
+    fixedRowHeight,
+    isLoadMoreRequiredForNormalRow
 }) => {
     const sizeMap = useRef({});
-    const setSize = useCallback(
-        (index, size) => {
-            const currentSize = sizeMap.current[index];
-            if (currentSize !== size) {
-                sizeMap.current = { ...sizeMap.current, [index]: size };
-                reRenderListData(index);
+
+    const setSize = (index, size) => {
+        const currentSize = sizeMap.current[index];
+        if (currentSize !== size) {
+            sizeMap.current = { ...sizeMap.current, [index]: size };
+            reRenderListData(index);
+        }
+    };
+
+    const getSize = (index) => {
+        const currentRow = rows[index];
+        const { original } = currentRow;
+        const { lastPage, isParent } = original;
+        const isParentRow = isParent === true;
+        if (isParentRowCollapsed(currentRow)) {
+            return 0;
+        }
+        const { current } = sizeMap;
+        const firstRowSize = current[0];
+        const secondRowSize = current[1];
+        const defaultRowSize = 50;
+
+        if (fixedRowHeight === true && !isParentRow) {
+            if (isParentGrid) {
+                if (isLoadMoreChildRowsRequiredForRow(index, lastPage)) {
+                    return secondRowSize + 52 || defaultRowSize + 52;
+                }
+                return secondRowSize || defaultRowSize;
             }
-        },
-        [rows, additionalColumn, expandedParentRows]
-    );
-    const getSize = useCallback(
-        (index) => {
-            const currentRow = rows[index];
-            const isParentRow =
-                currentRow &&
-                currentRow.original &&
-                currentRow.original.isParent === true;
-            if (isParentRowCollapsed(currentRow)) {
-                return 0;
+            return firstRowSize || defaultRowSize;
+        }
+
+        const currentRowSize = current[index];
+        let rowSizeToReturn = null;
+        if (currentRowSize !== undefined && currentRowSize !== null) {
+            rowSizeToReturn = currentRowSize;
+        } else if (isParentRow) {
+            rowSizeToReturn = firstRowSize;
+        } else {
+            rowSizeToReturn = secondRowSize;
+        }
+        return rowSizeToReturn || defaultRowSize;
+    };
+
+    useEffect(() => {
+        reRenderListData();
+        return () => {
+            if (infiniteLoaderRef) {
+                infiniteLoaderRef(null);
             }
-            const { current } = sizeMap;
-            const rowSize = current[index];
-            let rowSizeToReturn = null;
-            if (rowSize !== undefined && rowSize !== null) {
-                rowSizeToReturn = rowSize;
-            } else if (isParentRow) {
-                rowSizeToReturn = current[0];
-            } else {
-                rowSizeToReturn = current[1];
-            }
-            return rowSizeToReturn || 50;
-        },
-        [rows, additionalColumn, expandedParentRows]
-    );
+            listRef.current = null;
+        };
+    }, []);
 
     return (
         <List
             ref={(list) => {
-                if (infiniteLoaderRef) {
-                    infiniteLoaderRef(list);
+                if (list !== null && list !== undefined) {
+                    if (infiniteLoaderRef) {
+                        infiniteLoaderRef(list);
+                    }
+                    listRef.current = list;
                 }
-                listRef.current = list;
             }}
             style={{
                 overflowX: "hidden"
@@ -87,39 +110,38 @@ const RowsList = ({
         >
             {useCallback(
                 ({ index, style }) => {
-                    if (rows && rows.length > 0 && index >= 0) {
-                        // if (isItemLoaded(index)) - This check never became false during testing. Hence avoiding it to reach 100% code coverage in JEST test.
-                        const row = rows[index];
-                        prepareRow(row);
-                        return (
-                            <ListItem
-                                row={row}
-                                style={style}
-                                theme={theme}
-                                index={index}
-                                setSize={setSize}
-                                isParentGrid={isParentGrid}
-                                multiRowSelection={multiRowSelection}
-                                parentRowExpandable={parentRowExpandable}
-                                isRowExpandEnabled={isRowExpandEnabled}
-                                isParentRowSelected={isParentRowSelected}
-                                isParentRowCollapsed={isParentRowCollapsed}
-                                toggleParentRowSelection={
-                                    toggleParentRowSelection
-                                }
-                                toggleParentRow={toggleParentRow}
-                                isParentRowOpen={isParentRowOpen}
-                                isLoadMoreChildRowsRequiredForRow={
-                                    isLoadMoreChildRowsRequiredForRow
-                                }
-                                loadMoreChildData={loadMoreChildData}
-                                parentColumn={parentColumn}
-                                additionalColumn={additionalColumn}
-                                getRowInfo={getRowInfo}
-                            />
-                        );
-                    }
-                    return null;
+                    // if (isItemLoaded(index)) - This check never became false during testing. Hence avoiding it to reach 100% code coverage in JEST test.
+                    const row = rows[index];
+                    prepareRow(row);
+                    return (
+                        <ListItem
+                            row={row}
+                            style={style}
+                            theme={theme}
+                            index={index}
+                            setSize={setSize}
+                            isParentGrid={isParentGrid}
+                            multiRowSelection={multiRowSelection}
+                            parentRowExpandable={parentRowExpandable}
+                            isRowExpandEnabled={isRowExpandEnabled}
+                            isParentRowSelected={isParentRowSelected}
+                            isParentRowCollapsed={isParentRowCollapsed}
+                            toggleParentRowSelection={toggleParentRowSelection}
+                            toggleParentRow={toggleParentRow}
+                            isParentRowOpen={isParentRowOpen}
+                            isLoadMoreChildRowsRequiredForRow={
+                                isLoadMoreChildRowsRequiredForRow
+                            }
+                            loadMoreChildData={loadMoreChildData}
+                            parentColumn={parentColumn}
+                            additionalColumn={additionalColumn}
+                            getRowInfo={getRowInfo}
+                            fixedRowHeight={fixedRowHeight}
+                            isLoadMoreRequiredForNormalRow={
+                                isLoadMoreRequiredForNormalRow
+                            }
+                        />
+                    );
                 },
                 [rows, additionalColumn, expandedParentRows]
             )}
@@ -151,7 +173,9 @@ RowsList.propTypes = {
     additionalColumn: PropTypes.object,
     getRowInfo: PropTypes.func,
     expandedParentRows: PropTypes.array,
-    reRenderListData: PropTypes.func
+    reRenderListData: PropTypes.func,
+    fixedRowHeight: PropTypes.bool,
+    isLoadMoreRequiredForNormalRow: PropTypes.func
 };
 
 export default RowsList;

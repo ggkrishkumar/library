@@ -112,14 +112,8 @@ export const extractColumns = (
                 } else {
                     // If no inner cells are there, just do sort on column value
                     elem.sortType = (rowA, rowB) => {
-                        let rowAValue = null;
-                        if (rowA && rowA.original) {
-                            rowAValue = rowA.original[accessor];
-                        }
-                        let rowBValue = null;
-                        if (rowB && rowB.original) {
-                            rowBValue = rowB.original[accessor];
-                        }
+                        const rowAValue = rowA.original[accessor] || null;
+                        const rowBValue = rowB.original[accessor] || null;
                         return rowAValue > rowBValue ? -1 : 1;
                     };
                 }

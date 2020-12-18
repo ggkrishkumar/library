@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ClickAwayListener from "react-click-away-listener";
 import PropTypes from "prop-types";
-import { IconCancel } from "../Utilities/SvgUtilities";
+import { IconCancel, IconKebab } from "../Utilities/SvgUtilities";
 
 const RowOptions = ({ row, rowActions }) => {
     const { original } = row;
@@ -29,9 +29,7 @@ const RowOptions = ({ row, rowActions }) => {
                 role="presentation"
                 onClick={openRowOptionsOverlay}
             >
-                <i className="ng-action__kebab" />
-                <i className="ng-action__kebab" />
-                <i className="ng-action__kebab" />
+                <IconKebab className="ng-icon ng-action__kebab" />
             </span>
             {isRowOptionsOpen ? (
                 <ClickAwayListener
@@ -47,7 +45,7 @@ const RowOptions = ({ row, rowActions }) => {
                         onClick={closeRowOptionsOverlay}
                     >
                         <i>
-                            <IconCancel />
+                            <IconCancel className="ng-icon" />
                         </i>
                     </span>
                 </ClickAwayListener>

@@ -271,49 +271,6 @@ describe("Reference test cases", () => {
             remarks: "Labore irure."
         });
     }
-
-    // Mock function to calculate row height
-    const mockCalculateRowHeight = jest.fn((row, columnsInGrid) => {
-        // Minimum height for each row
-        let rowHeight = 50;
-        if (columnsInGrid && columnsInGrid.length > 0 && row) {
-            // Get properties of a row
-            const { original, isExpanded } = row;
-            // Find the column with maximum width configured, from grid columns list
-            const columnWithMaxWidth = [...columnsInGrid].sort((a, b) => {
-                return b.width - a.width;
-            })[0];
-            // Get column properties including the user resized column width (totalFlexWidth)
-            const { id, width, totalFlexWidth } = columnWithMaxWidth;
-            // Get row value of that column
-            const rowValue = original[id];
-            if (rowValue) {
-                // Find the length of text of data in that column
-                const textLength = Object.values(rowValue).join(",").length;
-                // This is a formula that was created for the test data used.
-                rowHeight += Math.ceil((80 * textLength) / totalFlexWidth);
-                const widthVariable =
-                    totalFlexWidth > width
-                        ? totalFlexWidth - width
-                        : width - totalFlexWidth;
-                rowHeight += widthVariable / 1000;
-            }
-            // Add logic to increase row height if row is expanded
-            if (isExpanded && mockAdditionalColumn) {
-                // Increase height based on the number of inner cells in additional columns
-                rowHeight +=
-                    mockAdditionalColumn.innerCells &&
-                    mockAdditionalColumn.innerCells.length > 0
-                        ? mockAdditionalColumn.innerCells.length * 35
-                        : 35;
-            }
-        }
-        return rowHeight;
-    });
-
-    // Return row actions to be displayed in the Kebab menu of Grid
-    const mockRowActions = jest.fn();
-
     const mockOnRowUpdate = jest.fn();
     const mockOnRowSelect = jest.fn();
     const mockLoadMoreData = jest.fn();
@@ -338,7 +295,6 @@ describe("Reference test cases", () => {
                 pageInfo={smallPageInfo}
                 loadMoreData={mockLoadMoreData}
                 columns={gridColumns}
-                calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
                 onRowSelect={mockOnRowSelect}
             />
@@ -359,7 +315,6 @@ describe("Reference test cases", () => {
                 pageInfo={pageInfo}
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
-                calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
                 onRowSelect={mockOnRowSelect}
             />
@@ -387,7 +342,6 @@ describe("Reference test cases", () => {
                 paginationType="index"
                 pageInfo={pageInfo}
                 columns={gridColumns}
-                calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockOnRowUpdate}
                 onRowSelect={mockOnRowSelect}
             />
@@ -412,46 +366,5 @@ describe("Reference test cases", () => {
             );
         });
         expect(mockOnRowSelect).toBeCalled();
-    });
-
-    it("test row actions", () => {
-        const { container, getAllByTestId, getByTestId } = render(
-            <Grid
-                gridData={data}
-                idAttribute="travelId"
-                paginationType="index"
-                pageInfo={pageInfo}
-                columns={gridColumns}
-                calculateRowHeight={mockCalculateRowHeight}
-                rowActions={mockRowActions}
-                onRowUpdate={mockOnRowUpdate}
-                onRowSelect={mockOnRowSelect}
-            />
-        );
-        const gridContainer = container;
-        expect(gridContainer).toBeInTheDocument();
-
-        // Open actions overlay
-        const rowActionOpenLinks = getAllByTestId("rowActions-open-link");
-        act(() => {
-            rowActionOpenLinks[0].dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Check if row actions overlay has been opened
-        const rowActionsOverlay = getByTestId("rowActions-kebab-overlay");
-        expect(rowActionsOverlay).toBeInTheDocument();
-        // Click close button
-        const closeButton = getByTestId("close-rowActions-kebab-overlay");
-        act(() => {
-            closeButton.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Check if overlay has been closed
-        const overlayContainer = container.getElementsByClassName(
-            "row-options-overlay"
-        );
-        expect(overlayContainer.length).toBe(0);
     });
 });

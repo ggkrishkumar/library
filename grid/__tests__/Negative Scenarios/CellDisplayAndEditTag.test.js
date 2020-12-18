@@ -64,6 +64,13 @@ describe("CellDisplayAndEditTag unit test", () => {
         isVisible: true,
         display: true
     };
+    const IdcolumnMockData = {
+        id: "travelId",
+        depth: 0,
+        columnId: "column_0",
+        isVisible: true,
+        display: true
+    };
 
     let container;
     beforeEach(() => {
@@ -71,7 +78,7 @@ describe("CellDisplayAndEditTag unit test", () => {
         document.body.appendChild(container);
     });
     afterEach(cleanup);
-    it("should renders component with cellkey and columnkey", () => {
+    it("should render component with cellkey and columnkey", () => {
         const componnet = render(
             <CellDisplayAndEditContext.Provider
                 value={{
@@ -108,6 +115,34 @@ describe("CellDisplayAndEditTag unit test", () => {
                 }}
             >
                 <CellDisplayAndEditTag />
+            </CellDisplayAndEditContext.Provider>,
+            container
+        );
+        expect(componnet).toBeDefined();
+    });
+    it("should return null when invalid cellkey is passed", () => {
+        const componnet = render(
+            <CellDisplayAndEditContext.Provider
+                value={{
+                    column: columnMockData,
+                    columns: columnsMockData
+                }}
+            >
+                <CellDisplayAndEditTag cellKey="invalid" />
+            </CellDisplayAndEditContext.Provider>,
+            container
+        );
+        expect(componnet).toBeDefined();
+    });
+    it("should return null when cellkey i spassed but column doesn't have inner cells", () => {
+        const componnet = render(
+            <CellDisplayAndEditContext.Provider
+                value={{
+                    column: IdcolumnMockData,
+                    columns: columnsMockData
+                }}
+            >
+                <CellDisplayAndEditTag cellKey="flight" />
             </CellDisplayAndEditContext.Provider>,
             container
         );

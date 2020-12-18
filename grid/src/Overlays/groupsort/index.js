@@ -7,7 +7,7 @@ import ClickAwayListener from "react-click-away-listener";
 import PropTypes from "prop-types";
 import SortingList from "./sortingList";
 import { convertToIndividualColumns } from "../../Utilities/GridUtilities";
-import { IconClose } from "../../Utilities/SvgUtilities";
+import { IconCancel } from "../../Utilities/SvgUtilities";
 
 const GroupSort = (props) => {
     const {
@@ -145,10 +145,10 @@ const GroupSort = (props) => {
                 data-testid="groupsortoverlay"
             >
                 <div className="ng-popover__header">
-                    <span>Sort</span>
+                    <span>Group Sort</span>
                     <div className="ng-popover__close">
                         <i aria-hidden="true" onClick={toggleGroupSortOverLay}>
-                            <IconClose />
+                            <IconCancel className="ng-icon" />
                         </i>
                     </div>
                 </div>
@@ -185,25 +185,23 @@ const GroupSort = (props) => {
                         <div className="ng-popover__txt">New Sort</div>
                     </div>
                 </div>
-                <div className="ng-popover--sort__footer">
-                    <div className="ng-popover__btns">
-                        <button
-                            type="button"
-                            data-testid="clearSort"
-                            className="neo-btn neo-btn-link btn btn-secondary"
-                            onClick={clearSortingOptions}
-                        >
-                            Clear All
-                        </button>
-                        <button
-                            type="button"
-                            data-testid="saveSort"
-                            className="neo-btn neo-btn-primary btn btn-secondary"
-                            onClick={applySort}
-                        >
-                            Ok
-                        </button>
-                    </div>
+                <div className="ng-popover__footer">
+                    <button
+                        type="button"
+                        data-testid="clearSort"
+                        className="neo-btn neo-btn-link btn btn-secondary"
+                        onClick={clearSortingOptions}
+                    >
+                        Clear All
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="saveSort"
+                        className="neo-btn neo-btn-primary btn btn-secondary"
+                        onClick={applySort}
+                    >
+                        Ok
+                    </button>
                 </div>
             </ClickAwayListener>
         );

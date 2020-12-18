@@ -24,7 +24,7 @@ const GlobalFilter = ({ globalFilter, setGlobalFilter }) => {
                 placeholder="Search"
             />
             <i className="ng-txt-wrap__icon">
-                <IconSearch />
+                <IconSearch className="ng-icon" />
             </i>
         </div>
     );

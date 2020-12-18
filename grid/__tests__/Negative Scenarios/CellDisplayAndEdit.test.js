@@ -30,7 +30,7 @@ describe("CellDisplayAndEdit unit test", () => {
                         className="flight-no-input"
                         type="text"
                         value={flightno}
-                        onChange={() => rowUpdateCallBack("nothing")}
+                        onChange={() => rowUpdateCallBack(null)}
                     />
                 </DisplayTag>
                 <DisplayTag columnKey="flight" cellKey="date">
@@ -165,6 +165,7 @@ describe("CellDisplayAndEdit unit test", () => {
                 <CellDisplayAndEdit
                     row={row}
                     columns={columns}
+                    expandableColumn
                     updateRowInGrid={mockupdateRowInGrid}
                 />,
                 mockContainer

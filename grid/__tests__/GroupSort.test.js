@@ -820,8 +820,8 @@ describe("Group sort functionality test", () => {
                     date: "23-May-2016"
                 },
                 segment: {
-                    from: "AAB",
-                    to: "XXY"
+                    from: i % 2 === 0 ? "AAA" : "BBB",
+                    to: i % 2 === 0 ? "XXX" : "YYY"
                 },
                 details: {
                     flightModel: 6593,

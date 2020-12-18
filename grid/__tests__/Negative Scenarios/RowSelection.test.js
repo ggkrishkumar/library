@@ -4,7 +4,7 @@ import React from "react";
 import { render, cleanup } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import "@testing-library/jest-dom/extend-expect";
-import Grid from "../src/index";
+import Grid from "../../src/index";
 
 describe("render Index file ", () => {
     function mockOffsetSize(width, height) {
@@ -249,12 +249,11 @@ describe("render Index file ", () => {
     });
     afterEach(cleanup);
 
-    it("test multi row selections", () => {
+    it("test row selections without passing idAttribute", () => {
         mockOffsetSize(600, 600);
         const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
-                idAttribute="travelId"
                 columns={gridColumns}
                 getRowInfo={getRowInfo}
                 onRowUpdate={mockUpdateRowData}
@@ -266,184 +265,22 @@ describe("render Index file ", () => {
         expect(gridContainer).toBeInTheDocument();
 
         // Find checkboxes
-        let rowSelectors = getAllByTestId("rowSelector-singleRow");
+        const rowSelectors = getAllByTestId("rowSelector-singleRow");
         expect(rowSelectors.length).toBeGreaterThan(0);
 
         // Select first row
-        let firstRowSelector = rowSelectors[0];
+        const firstRowSelector = rowSelectors[0];
         act(() => {
             firstRowSelector.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
         // Selected checkbox count should be 1
-        let selectedCheckboxes = gridContainer.querySelectorAll(
+        const selectedCheckboxes = gridContainer.querySelectorAll(
             'input[type="checkbox"]:checked'
         );
         expect(selectedCheckboxes.length).toBe(1);
-
-        // Select second row
-        rowSelectors = getAllByTestId("rowSelector-singleRow");
-        let secondRowSelector = rowSelectors[1];
-        act(() => {
-            secondRowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should be 2 now
-        selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(2);
-
-        // Unselect second row
-        rowSelectors = getAllByTestId("rowSelector-singleRow");
-        secondRowSelector = rowSelectors[1];
-        act(() => {
-            secondRowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should be back 1 now
-        selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(1);
-
-        // Unselect first row
-        rowSelectors = getAllByTestId("rowSelector-singleRow");
-        firstRowSelector = rowSelectors[0];
-        act(() => {
-            firstRowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should be back 0 now
-        selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(0);
-    });
-
-    it("test single row selections", () => {
-        mockOffsetSize(600, 600);
-        const { container, getAllByTestId } = render(
-            <Grid
-                gridData={data}
-                idAttribute="travelId"
-                columns={gridColumns}
-                getRowInfo={getRowInfo}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-                multiRowSelection={false}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Find checkboxes
-        let rowSelectors = getAllByTestId("rowSelector-singleRow");
-        expect(rowSelectors.length).toBeGreaterThan(0);
-
-        // Select first row
-        let rowSelector = rowSelectors[0];
-        act(() => {
-            rowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should be 1
-        let selectedCheckboxes = document.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(1);
-
-        // Select second row
-        rowSelectors = getAllByTestId("rowSelector-singleRow");
-        rowSelector = rowSelectors[1];
-        act(() => {
-            rowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should still be 1
-        selectedCheckboxes = document.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(1);
-    });
-
-    it("test rows to select", () => {
-        mockOffsetSize(600, 600);
-        const { container } = render(
-            <Grid
-                gridData={data}
-                idAttribute="travelId"
-                columns={gridColumns}
-                getRowInfo={getRowInfo}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-                rowsToSelect={[0, 1, 2]}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Selected checkbox count should be 1
-        const selectedCheckboxes = document.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(3);
-    });
-
-    it("test single row selections for row where id attribute value is null", () => {
-        mockOffsetSize(600, 600);
-        const { container, getAllByTestId } = render(
-            <Grid
-                gridData={data}
-                idAttribute="travelId"
-                columns={gridColumns}
-                getRowInfo={getRowInfo}
-                onRowUpdate={mockUpdateRowData}
-                onRowSelect={mockSelectBulkData}
-                multiRowSelection={false}
-            />
-        );
-        const gridContainer = container;
-        // Check if grid has been loaded
-        expect(gridContainer).toBeInTheDocument();
-
-        // Find checkboxes
-        let rowSelectors = getAllByTestId("rowSelector-singleRow");
-        expect(rowSelectors.length).toBeGreaterThan(0);
-
-        // Select fourth row, where idAttribute is null
-        const firstRowSelector = rowSelectors[3];
-        act(() => {
-            firstRowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Checkbox will get selected, but Grid state won't be updated.
-        let selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(1);
-
-        // Select second row, where idAttribute is not null
-        rowSelectors = getAllByTestId("rowSelector-singleRow");
-        const secondRowSelector = rowSelectors[1];
-        act(() => {
-            secondRowSelector.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-            );
-        });
-        // Selected checkbox count should be 2 now, as Grid is not aware of the first row selection that does not have idAttribute
-        selectedCheckboxes = gridContainer.querySelectorAll(
-            'input[type="checkbox"]:checked'
-        );
-        expect(selectedCheckboxes.length).toBe(2);
+        // But no call back
+        expect(mockSelectBulkData).not.toHaveBeenCalled();
     });
 });

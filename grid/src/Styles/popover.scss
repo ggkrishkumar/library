@@ -5,30 +5,30 @@
 .neo-grid {
     .ng-popover {
         z-index: 16;
-        box-shadow: 0px 15px 30px var(--box-shadow);
+        box-shadow: 0 rem(15) rem(30) var(--box-shadow);
         position: absolute;
         font-size: rem(13);
-        color: var(--titlecolor);
+        color: var(--textcolor);
         line-height: rem(32);
         top: rem(38);
         right: 0;
         transition: 0.5s;
         background: var(--white);
-        border: 1px solid var(--border);
+        border: rem(1) solid var(--border);
         border-radius: rem(3);
         &:before {
             width: 0;
             height: 0;
-            border-left: 11px solid transparent;
-            border-right: 11px solid transparent;
-            border-bottom: 11px solid var(--white);
+            border-left: rem(11) solid transparent;
+            border-right: rem(11) solid transparent;
+            border-bottom: rem(11) solid var(--white);
             content: "";
-            top: -10px;
+            top: rem(-10);
             position: absolute;
-            right: 2px;
+            right: rem(2);
         }
         ::-webkit-scrollbar {
-            width: 6px;
+            width: rem(6);
         }
         ::-webkit-scrollbar-track {
             background: var(--scroll-track);
@@ -40,10 +40,10 @@
             background: var(--light-grey);
         }
         &__content {
-            margin: 10px;
-            min-height: 50px;
+            margin: rem(10);
+            min-height: rem(50);
             overflow-y: auto;
-            max-height: 150px;
+            max-height: rem(150);
         }
         &__close {
             margin-left: auto;
@@ -52,73 +52,96 @@
         }
         &__header {
             display: flex;
-            border-bottom: 1px solid var(--light-grey);
-            padding: 10px 10px 2px 10px;
+            border-bottom: rem(1) solid var(--light-grey);
+            padding: rem(10) rem(10) rem(2) rem(10);
         }
         &__chooser {
-            border-right: 1px solid var(--light-grey);
+            border-right: rem(1) solid var(--light-grey);
             .ng-chooser-body {
-                padding: 10px;
-                margin-bottom: 10px;
-                height: 440px;
-                width: 180px;
+                padding: rem(10);
+                margin-bottom: rem(10);
+                height: rem(440);
+                width: rem(238);
                 overflow-y: auto;
                 overflow-x: hidden;
                 &__selectall {
                     display: flex;
-                    padding: 0px 10px;
+                    padding: 0 rem(10);
                 }
                 &__txt {
-                    border: 1px solid var(--border);
-                    border-radius: 5px;
-                    padding: 0px 6px;
-                    width: 93%;
-                    height: 24px;
+                    border: rem(1) solid var(--border);
+                    border-radius: rem(3);
+                    padding: 0 rem(6);
+                    width: 100%;
+                    height: rem(30);
                     font-size: rem(12);
+                    margin-bottom: rem(6);
                 }
                 &__wrap {
                     display: flex;
-                    border: 1px solid var(--border);
-                    border-radius: 3px;
+                    border: rem(1) solid var(--border);
+                    border-radius: rem(3);
                     padding: 0 rem(10);
                     border-bottom: none;
-                    &:last-child{
-                        border-bottom: 1px solid var(--border);
+                    height: rem(32);
+                    &:last-child {
+                        border-bottom: rem(1) solid var(--border);
                     }
                 }
                 &__checkwrap {
                     margin-right: rem(10);
                     font-size: rem(12);
-                    color: var(--titlecolor);
+                    display: flex;
+                    align-items: center;
                 }
             }
         }
         &__settings {
             width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        &__footer {
+            padding: rem(16) rem(10);
+            border-top: rem(1) solid var(--light-grey);
+            display: flex;
+            margin-top: auto;
+            justify-content: flex-end;
         }
         &--sort {
-            width: 498px;
+            width: rem(498);
             &__items {
                 display: flex;
+                .ng-popover__reorder {
+                    .ng-icon-block {
+                        display: flex;
+                        margin-top: rem(8);
+                        .ng-icon {
+                            zoom: 1;
+                        }
+                    }
+                }
+                .ng-icon {
+                    height: rem(15);
+                    width: rem(15);
+                }
             }
             &__section {
-                margin: 0px 0px 16px 40px;
+                margin: 0 0 rem(16) rem(40);
                 display: flex;
-                color: var(--dark-grey);
                 width: 14%;
                 cursor: pointer;
                 .ng-popover__txt {
-                    margin-left: 6px;
-                    color: #3c476f;
+                    margin-left: rem(6);
+                    color: var(--primary);
                     line-height: normal;
                     font-size: rem(12);
-                    font-weight: normal;
                 }
             }
             &__icon-plus {
                 font-size: rem(22);
-                line-height: 14px;
-                color: #3c476f;
+                line-height: rem(14);
+                color: var(--primary);
             }
             &__items-title {
                 display: flex;
@@ -128,50 +151,42 @@
             &__item-text {
                 font-size: rem(12);
                 position: relative;
-                left: -28px;
+                left: rem(-41);
                 &:nth-child(2) {
-                    left: -58px;
+                    left: rem(-69);
                 }
                 &:nth-child(3) {
-                    left: -88px;
+                    left: rem(-100);
                 }
             }
             &__reorder {
-                padding: 0px 6px;
+                padding: 0 rem(6);
                 font-size: rem(12);
             }
             &__icon {
-                margin: 2px 0 0;
+                margin: rem(2) 0 0;
                 cursor: pointer;
             }
             &__select {
-                width: 120px;
-                height: 28px;
-                border-radius: 3px;
-                border-color: #d7d7d7;
-                color: rgba(26, 72, 105, 0.6);
-            }
-            &__footer {
-                padding: 10px;
-                border-top: var(--light-grey);
-                display: flex;
-                .ng-popover__btns {
-                    margin-left: auto;
-                }
+                width: rem(120);
+                height: rem(28);
+                border-radius: rem(3);
+                border-color: var(--border);
+                color: var(--textcolor);
             }
             &__warning {
-                margin-bottom: 10px;
-                padding-left: 42px;
+                margin-bottom: rem(10);
+                padding-left: rem(42);
                 color: var(--danger);
             }
         }
         &--column {
             display: flex;
             @media only screen and (max-width: 991px) {
-                width: 680px;
+                width: rem(680);
             }
             &__warning {
-                margin-left: 10px;
+                margin-left: rem(10);
                 color: var(--danger);
             }
             &__close {
@@ -181,29 +196,34 @@
             }
             &__body {
                 display: flex;
-                padding: 10px;
+                padding: rem(10);
                 flex-wrap: wrap;
                 overflow-y: scroll;
-                height: 380px;
-                width: 768px;
-                padding-bottom: 60px;
+                height: rem(380);
+                width: rem(672);
+                padding-bottom: rem(60);
                 @media only screen and (max-width: 991px) {
                     width: 100%;
                 }
             }
+            &__head {
+                font-size: rem(12);
+                line-height: 1;
+                margin: rem(20) 0 0 rem(8);
+            }
             &__reorder {
-                border: 1px solid #8da3b4;
-                border-radius: 3px;
+                border: rem(1) solid var(--border);
+                border-radius: rem(3);
                 text-align: center;
-                min-height: 150px;
-                margin: 10px 4px;
-                padding: 10px 4px;
+                min-height: rem(150);
+                margin: rem(6) rem(6);
+                padding: rem(10) rem(8);
                 -moz-user-select: none;
                 -ms-user-select: none;
                 -khtml-user-select: none;
                 -webkit-user-select: none;
                 -webkit-touch-callout: none;
-                min-width: 90px;
+                min-width: rem(104);
                 word-break: break-all;
                 line-height: normal;
                 font-size: rem(12);
@@ -211,107 +231,90 @@
                     width: 95%;
                     max-width: none;
                     height: auto;
-                    min-height: 80px;
+                    min-height: rem(80);
                     text-align: left;
-                    padding-left: 10px;
+                    padding-left: rem(10);
+                    .ng-popover--column__list {
+                        display: flex;
+                        justify-content: flex-start;
+                        flex-wrap: wrap;
+                    }
+                    .ng-popover--column__wrap {
+                        display: flex;
+                        min-width: rem(140);
+                    }
                 }
             }
             &__drag {
-                margin-bottom: 10px;
+                margin-bottom: rem(10);
             }
             &__wrap {
                 display: flex;
                 justify-content: left;
             }
             &__list {
-                margin-top: 14px;
+                margin-top: rem(14);
                 &--group {
                     text-align: left;
                 }
             }
             &__title {
-                margin-bottom: 6px;
+                margin-bottom: rem(6);
                 display: block;
             }
             &__check {
-                margin-right: 10px;
-            }
-            &__footer {
-                padding: 10px;
-                border-top: 1px solid var(--light-grey);
-                position: absolute;
-                bottom: 0px;
-                right: 0px;
-                width: 80.9%;
-                display: flex;
-                background: var(--white);
-                @media only screen and (max-width: 768px) {
-                    width: 73.2%;
-                }
-            }
-            &__btns {
-                margin-left: auto;
+                margin-right: rem(10);
             }
         }
         &--exports {
-            width: 550px;
+            width: rem(550);
             display: flex;
-            &__header {
-                padding: 10px;
-                border-bottom: var(--light-grey) solid 1px;
-                color: #3c425e;
-                font-size: rem(14);
-                display: flex;
-            }
             &__close {
                 margin-left: auto;
                 font-size: rem(14);
                 cursor: pointer;
             }
             &__title {
-                padding: 10px 14px 0;
+                padding: rem(10) rem(14) 0;
                 font-size: rem(14);
             }
             &__body {
                 display: flex;
-                padding: 10px;
+                padding: rem(10);
             }
             &__reorder {
-                border: 1px solid var(--border);
-                border-radius: 5px;
-                height: 86px;
-                margin: 0 4px;
-                padding: 8px 10px;
-                width: 86px;
+                border: rem(1) solid var(--border);
+                border-radius: rem(5);
+                height: rem(86);
+                margin: 0 rem(4);
+                padding: rem(2) rem(8);
+                width: rem(86);
                 line-height: normal;
             }
             &__file {
                 text-align: center;
+                .ng-icon {
+                    zoom: 2.7;
+                    &--pdf {
+                        fill: var(--danger);
+                    }
+                    &--excel {
+                        fill: var(--success);
+                    }
+                    &--csv {
+                        fill: var(--default);
+                    }
+                }
                 .ng-popover--exports__file-type {
                     display: block;
-                    font-size: rem(14);
-                    font-weight: normal;
+                    font-size: rem(12);
                     line-height: normal;
+                    margin-top: rem(4);
                 }
-            }
-            &__footer {
-                padding: 16px 10px;
-                border-top: 1px solid var(--light-grey);
-                position: absolute;
-                bottom: 0px;
-                right: 0px;
-                width: 67%;
-                display: flex;
-                @media only screen and (max-width: 1024px) {
-                    width: 66.8%;
-                }
-            }
-            &__btns {
-                margin-left: auto;
             }
             &__warning {
                 position: absolute;
-                margin-top: 300px;
+                margin-top: rem(300);
                 right: 5%;
                 color: var(--danger);
             }

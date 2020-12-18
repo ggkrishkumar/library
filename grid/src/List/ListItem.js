@@ -22,67 +22,70 @@ const ListItem = ({
     loadMoreChildData,
     parentColumn,
     additionalColumn,
-    getRowInfo
+    getRowInfo,
+    fixedRowHeight,
+    isLoadMoreRequiredForNormalRow
 }) => {
     if (isParentRowCollapsed(row)) {
         return null;
     }
 
     const { original } = row;
-    if (original) {
-        const { isParent, lastPage } = original;
-        if (isParent === true && isParentGrid) {
-            return (
-                <div className="ng-accordion" style={style}>
-                    <ParentItem
-                        row={row}
-                        theme={theme}
-                        index={index}
-                        setSize={setSize}
-                        multiRowSelection={multiRowSelection}
-                        parentRowExpandable={parentRowExpandable}
-                        isParentRowSelected={isParentRowSelected}
-                        toggleParentRowSelection={toggleParentRowSelection}
-                        toggleParentRow={toggleParentRow}
-                        isParentRowOpen={isParentRowOpen}
-                        parentColumn={parentColumn}
-                    />
-                </div>
-            );
-        }
-
-        // Add classname passed by developer from getRowInfo prop to required rows
-        let rowClassName = "";
-        if (getRowInfo && typeof getRowInfo === "function") {
-            const rowInfo = getRowInfo(original);
-            if (rowInfo && rowInfo.className) {
-                rowClassName = rowInfo.className;
-            }
-        }
-
+    const { isParent, lastPage } = original;
+    if (isParent === true && isParentGrid) {
         return (
-            <div
-                {...row.getRowProps({ style })}
-                data-testid="gridrow"
-                className={`neo-grid__tr ${rowClassName}`}
-            >
-                <RowItem
+            <div className="ng-accordion" style={style}>
+                <ParentItem
                     row={row}
-                    theme={theme}
                     index={index}
                     setSize={setSize}
-                    isRowExpandEnabled={isRowExpandEnabled}
-                    additionalColumn={additionalColumn}
-                    isLoadMoreChildRowsRequiredForRow={
-                        isLoadMoreChildRowsRequiredForRow
-                    }
-                    lastPage={lastPage}
-                    loadMoreChildData={loadMoreChildData}
+                    multiRowSelection={multiRowSelection}
+                    parentRowExpandable={parentRowExpandable}
+                    isParentRowSelected={isParentRowSelected}
+                    toggleParentRowSelection={toggleParentRowSelection}
+                    toggleParentRow={toggleParentRow}
+                    isParentRowOpen={isParentRowOpen}
+                    parentColumn={parentColumn}
                 />
             </div>
         );
     }
-    return null;
+
+    // Add classname passed by developer from getRowInfo prop to required rows
+    let rowClassName = "";
+    if (getRowInfo && typeof getRowInfo === "function") {
+        const rowInfo = getRowInfo(original);
+        if (rowInfo && rowInfo.className) {
+            rowClassName = rowInfo.className;
+        }
+    }
+
+    return (
+        <div
+            {...row.getRowProps({ style })}
+            data-testid="gridrow"
+            className={`neo-grid__tr ${
+                isParentGrid ? "neo-grid__child" : ""
+            } ${rowClassName}`}
+        >
+            <RowItem
+                row={row}
+                theme={theme}
+                index={index}
+                setSize={setSize}
+                isRowExpandEnabled={isRowExpandEnabled}
+                additionalColumn={additionalColumn}
+                isLoadMoreChildRowsRequiredForRow={
+                    isLoadMoreChildRowsRequiredForRow
+                }
+                lastPage={lastPage}
+                loadMoreChildData={loadMoreChildData}
+                isParentGrid={isParentGrid}
+                fixedRowHeight={fixedRowHeight}
+                isLoadMoreRequiredForNormalRow={isLoadMoreRequiredForNormalRow}
+            />
+        </div>
+    );
 };
 
 ListItem.propTypes = {
@@ -104,7 +107,9 @@ ListItem.propTypes = {
     loadMoreChildData: PropTypes.func,
     parentColumn: PropTypes.object,
     additionalColumn: PropTypes.object,
-    getRowInfo: PropTypes.func
+    getRowInfo: PropTypes.func,
+    fixedRowHeight: PropTypes.bool,
+    isLoadMoreRequiredForNormalRow: PropTypes.func
 };
 
 export default ListItem;

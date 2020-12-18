@@ -4,6 +4,7 @@
 }
 .neo-grid {
     &__header {
+        font-size: rem(12);
         background-color: var(--light_hover);
         display: flex;
         padding: rem(8) rem(4);
@@ -15,7 +16,7 @@
             align-items: center;
             min-width: rem(90);
             &__check {
-                padding-right: 4px;
+                padding-right: rem(4);
             }
             &__title {
                 margin-left: rem(4);
@@ -28,26 +29,38 @@
             .ng-txt-wrap {
                 position: relative;
                 .ng-txt {
-                    padding: 1px 0 0 rem(24);
+                    padding: rem(1) 0 0 rem(24);
                 }
                 &__icon {
                     position: absolute;
-                    left: 7px;
+                    left: rem(7);
                     top: 0;
                     height: 100%;
                     display: flex;
                     align-items: center;
+                    .ng-icon {
+                        height: rem(15);
+                        width: rem(15);
+                    }
                 }
             }
             &__items {
                 position: relative;
+                .ng-icon-block {
+                    .ng-icon {
+                        zoom: 1.4;
+                        &--filter {
+                            zoom: 1;
+                        }
+                    }
+                }
             }
             &__icons {
                 margin-left: rem(8);
-                border: var(--border) solid 1px;
+                border: var(--border) solid rem(1);
                 border-radius: rem(3);
                 cursor: pointer;
-                line-height: 1px;
+                line-height: rem(1);
                 height: rem(32);
                 width: rem(32);
                 display: flex;

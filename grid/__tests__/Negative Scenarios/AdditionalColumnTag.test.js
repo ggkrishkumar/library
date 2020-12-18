@@ -26,20 +26,21 @@ describe("AdditionalColumnTag unit test", () => {
         document.body.appendChild(container);
     });
     afterEach(cleanup);
-    it("should renders component with cellkey and columnkey", () => {
-        const componnet = render(
+    it("should return null when additionalColumn is not passed", () => {
+        const component = render(
             <AdditionalColumnContext.Provider
                 value={{
-                    additionalColumn: additionalColumnMockData
+                    additionalColumn: null
                 }}
             >
                 <AdditionalColumnTag cellKey="remarks" />
             </AdditionalColumnContext.Provider>,
             container
         );
-        expect(componnet).toBeDefined();
+        expect(component).toBeDefined();
     });
-    it("should return null when cellkey is not passed", () => {
+
+    it("should return null when cell key is not passed", () => {
         const component = render(
             <AdditionalColumnContext.Provider
                 value={{
@@ -47,6 +48,20 @@ describe("AdditionalColumnTag unit test", () => {
                 }}
             >
                 <AdditionalColumnTag />
+            </AdditionalColumnContext.Provider>,
+            container
+        );
+        expect(component).toBeDefined();
+    });
+
+    it("should return null when invalid cell key is passed", () => {
+        const component = render(
+            <AdditionalColumnContext.Provider
+                value={{
+                    additionalColumn: additionalColumnMockData
+                }}
+            >
+                <AdditionalColumnTag cellKey="invalid" />
             </AdditionalColumnContext.Provider>,
             container
         );

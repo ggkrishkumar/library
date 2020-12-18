@@ -9,7 +9,7 @@ import ColumnSearch from "../common/columnsSearch";
 import {
     IconCsv,
     IconExcel,
-    IconClose,
+    IconCancel,
     IconPdf
 } from "../../Utilities/SvgUtilities";
 import { convertToIndividualColumns } from "../../Utilities/GridUtilities";
@@ -384,7 +384,7 @@ const ExportData = (props) => {
                 data-testid="exportoverlay"
             >
                 <div className="ng-popover__chooser">
-                    <div className="ng-popover--exports__header">
+                    <div className="ng-popover__header">
                         <span>Export Data</span>
                     </div>
                     <ColumnSearch
@@ -396,13 +396,13 @@ const ExportData = (props) => {
                     />
                 </div>
                 <div className="ng-popover__settings">
-                    <div className="ng-popover--exports__header">
+                    <div className="ng-popover__header">
                         <div className="ng-popover--exports__close">
                             <i
                                 aria-hidden="true"
                                 onClick={toggleExportDataOverlay}
                             >
-                                <IconClose />
+                                <IconCancel className="ng-icon" />
                             </i>
                         </div>
                     </div>
@@ -426,11 +426,11 @@ const ExportData = (props) => {
                             >
                                 <div className="ng-popover--exports__file">
                                     <i>
-                                        <IconPdf />
+                                        <IconPdf className="ng-icon ng-icon--pdf" />
                                     </i>
-                                    <strong className="ng-popover--exports__file-type">
+                                    <span className="ng-popover--exports__file-type">
                                         PDF
-                                    </strong>
+                                    </span>
                                 </div>
                             </label>
                         </div>
@@ -452,11 +452,11 @@ const ExportData = (props) => {
                             >
                                 <div className="ng-popover--exports__file">
                                     <i>
-                                        <IconExcel />
+                                        <IconExcel className="ng-icon ng-icon--excel" />
                                     </i>
-                                    <strong className="ng-popover--exports__file-type">
+                                    <span className="ng-popover--exports__file-type">
                                         Excel
-                                    </strong>
+                                    </span>
                                 </div>
                             </label>
                         </div>
@@ -478,11 +478,11 @@ const ExportData = (props) => {
                             >
                                 <div className="ng-popover--exports__file">
                                     <i>
-                                        <IconCsv />
+                                        <IconCsv className="ng-icon ng-icon--csv" />
                                     </i>
-                                    <strong className="ng-popover--exports__file-type">
+                                    <span className="ng-popover--exports__file-type">
                                         CSV
-                                    </strong>
+                                    </span>
                                 </div>
                             </label>
                         </div>
@@ -492,25 +492,23 @@ const ExportData = (props) => {
                             </span>
                         </div>
                     </div>
-                    <div className="ng-popover--exports__footer">
-                        <div className="ng-popover--exports__btns">
-                            <button
-                                type="button"
-                                data-testid="cancel_button"
-                                className="neo-btn neo-btn-primary btn btn-secondary"
-                                onClick={toggleExportDataOverlay}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                data-testid="export_button"
-                                className="neo-btn neo-btn-default btn btn-secondary"
-                                onClick={exportRowData}
-                            >
-                                Export
-                            </button>
-                        </div>
+                    <div className="ng-popover__footer">
+                        <button
+                            type="button"
+                            data-testid="cancel_button"
+                            className="neo-btn neo-btn-primary btn btn-secondary"
+                            onClick={toggleExportDataOverlay}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="export_button"
+                            className="neo-btn neo-btn-default btn btn-secondary"
+                            onClick={exportRowData}
+                        >
+                            Export
+                        </button>
                     </div>
                 </div>
             </ClickAwayListener>

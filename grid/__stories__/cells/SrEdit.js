@@ -3,7 +3,7 @@ import React, { useState } from "react";
 const SREdit = ({ rowData, rowUpdateCallBack }) => {
     const [updatedRowData, setUpdatedRowData] = useState(rowData);
     const { sr } = updatedRowData;
-    if (sr) {
+    if (sr !== null && sr !== undefined) {
         const updateRowData = (updatedSrData) => {
             const updatedRow = {
                 ...updatedRowData,

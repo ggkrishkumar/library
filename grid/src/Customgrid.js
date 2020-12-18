@@ -53,7 +53,6 @@ const Customgrid = (props) => {
     const {
         isDesktop,
         title,
-        gridHeight,
         theme,
         managableColumns,
         expandedRowData,
@@ -90,7 +89,8 @@ const Customgrid = (props) => {
         fileName,
         onGridRefresh,
         rowsToSelect,
-        rowsToDeselect
+        rowsToDeselect,
+        fixedRowHeight
     } = props;
 
     // Over scan count for react-window list
@@ -269,9 +269,9 @@ const Customgrid = (props) => {
                         disableSortBy: true,
                         display: true,
                         isGroupHeader: false,
-                        minWidth: 35,
-                        width: 35,
-                        maxWidth: 35,
+                        minWidth: isParentGrid ? 65 : 35,
+                        width: isParentGrid ? 65 : 35,
+                        maxWidth: isParentGrid ? 65 : 35,
                         Header: (headerSelectProps) => {
                             const {
                                 getToggleAllRowsSelectedProps
@@ -395,8 +395,8 @@ const Customgrid = (props) => {
                                                 <IconAngle
                                                     className={
                                                         row.isExpanded
-                                                            ? "ng-action__arrow-up"
-                                                            : "ng-action__arrow-down"
+                                                            ? "ng-icon ng-action__arrow-up"
+                                                            : "ng-icon ng-action__arrow-down"
                                                     }
                                                 />
                                             </i>
@@ -443,15 +443,24 @@ const Customgrid = (props) => {
         }
     };
 
-    // Recalculate row height from index 50 less than the last rendered item index in the list
+    // Recalculate row height from index passed as parameter. If not passed 50 less than the last rendered item index in the list
     const reRenderListData = (index) => {
-        if (listRef && listRef.current) {
+        if (listRef) {
             const { current } = listRef;
             if (current) {
-                const indexToReset =
-                    index !== null && index !== undefined && index >= 0
-                        ? index
-                        : 0;
+                let indexToReset = 0;
+                if (index !== null && index !== undefined && index >= 0) {
+                    indexToReset = index;
+                } else {
+                    const { _instanceProps } = current;
+                    if (_instanceProps) {
+                        const expectedItemsCount = overScanCount + 30;
+                        const { lastMeasuredIndex } = _instanceProps;
+                        const difference =
+                            lastMeasuredIndex - expectedItemsCount;
+                        indexToReset = difference >= 0 ? difference : 0;
+                    }
+                }
                 current.resetAfterIndex(indexToReset, true);
             }
         }
@@ -460,9 +469,7 @@ const Customgrid = (props) => {
     const loadMoreChildData = (row) => {
         if (row) {
             const { original } = row;
-            if (original) {
-                loadChildData(original);
-            }
+            loadChildData(original);
         }
     };
 
@@ -470,17 +477,13 @@ const Customgrid = (props) => {
         let returnValue = false;
         if (parentIdAttribute && row) {
             const { original } = row;
-            if (original) {
-                const rowParentIdAttribute = original[parentIdAttribute];
-                if (
-                    rowParentIdAttribute !== null &&
-                    rowParentIdAttribute !== undefined
-                ) {
-                    // Check if parent row is present in state.
-                    returnValue = expandedParentRows.includes(
-                        rowParentIdAttribute
-                    );
-                }
+            const rowParentIdAttribute = original[parentIdAttribute];
+            if (
+                rowParentIdAttribute !== null &&
+                rowParentIdAttribute !== undefined
+            ) {
+                // Check if parent row is present in state.
+                returnValue = expandedParentRows.includes(rowParentIdAttribute);
             }
         }
         return returnValue;
@@ -488,43 +491,41 @@ const Customgrid = (props) => {
 
     const toggleParentRow = (row) => {
         if (parentIdAttribute && row) {
-            const { original } = row;
-            if (original) {
-                const rowParentIdAttribute = original[parentIdAttribute];
-                if (
-                    rowParentIdAttribute !== null &&
-                    rowParentIdAttribute !== undefined
-                ) {
-                    // Check if parent row is present in state.
-                    // If present, remove it and if not present add it.
-                    if (expandedParentRows.includes(rowParentIdAttribute)) {
-                        setExpandedParentRows(
-                            expandedParentRows.filter(
-                                (item) => item !== rowParentIdAttribute
-                            )
-                        );
-                    } else {
-                        setExpandedParentRows([
-                            ...expandedParentRows,
-                            rowParentIdAttribute
-                        ]);
-                    }
+            const { original, index } = row;
+            const rowParentIdAttribute = original[parentIdAttribute];
+            if (
+                rowParentIdAttribute !== null &&
+                rowParentIdAttribute !== undefined
+            ) {
+                // Check if parent row is present in state.
+                // If present, remove it and if not present add it.
+                if (expandedParentRows.includes(rowParentIdAttribute)) {
+                    setExpandedParentRows(
+                        expandedParentRows.filter(
+                            (item) => item !== rowParentIdAttribute
+                        )
+                    );
+                } else {
+                    setExpandedParentRows([
+                        ...expandedParentRows,
+                        rowParentIdAttribute
+                    ]);
+                }
 
-                    // Check if child rows are present for parent row
-                    const childRow = rows.find((currentRow) => {
-                        return (
-                            currentRow &&
-                            currentRow.original &&
-                            currentRow.original.isParent !== true &&
-                            currentRow.original[parentIdAttribute] ===
-                                rowParentIdAttribute
-                        );
-                    });
-                    if (!childRow) {
-                        loadMoreChildData(row);
-                    } else {
-                        reRenderListData(row.index);
-                    }
+                // Check if child rows are present for parent row
+                const childRow = rows.find((currentRow) => {
+                    return (
+                        currentRow &&
+                        currentRow.original &&
+                        currentRow.original.isParent !== true &&
+                        currentRow.original[parentIdAttribute] ===
+                            rowParentIdAttribute
+                    );
+                });
+                if (!childRow) {
+                    loadMoreChildData(row);
+                } else {
+                    reRenderListData(index);
                 }
             }
         }
@@ -644,6 +645,12 @@ const Customgrid = (props) => {
     }, [rowsToSelect, rowsToDeselect, gridData, groupSortOptions]);
 
     useEffect(() => {
+        if (!isFirstRendering && isParentGrid && fixedRowHeight === true) {
+            reRenderListData();
+        }
+    }, [gridData, groupSortOptions]);
+
+    useEffect(() => {
         if (parentRowsToExpand && parentRowsToExpand.length > 0) {
             setExpandedParentRows(parentRowsToExpand);
         }
@@ -698,17 +705,15 @@ const Customgrid = (props) => {
             isParentGrid
         ) {
             const { original } = childRow;
-            if (original) {
-                const { isParent } = original;
-                if (isParent !== true) {
-                    const rowParentIdAttribute = original[parentIdAttribute];
-                    if (
-                        rowParentIdAttribute !== null &&
-                        rowParentIdAttribute !== undefined &&
-                        !expandedParentRows.includes(rowParentIdAttribute)
-                    ) {
-                        isParentCollpased = true;
-                    }
+            const { isParent } = original;
+            if (isParent !== true) {
+                const rowParentIdAttribute = original[parentIdAttribute];
+                if (
+                    rowParentIdAttribute !== null &&
+                    rowParentIdAttribute !== undefined &&
+                    !expandedParentRows.includes(rowParentIdAttribute)
+                ) {
+                    isParentCollpased = true;
                 }
             }
         }
@@ -719,50 +724,58 @@ const Customgrid = (props) => {
         let returnValue = false;
         if (row && parentIdAttribute && idAttribute) {
             const { original } = row;
-            if (original) {
-                const { isParent } = original;
-                if (isParent === true) {
-                    const rowParentIdAttribute = original[parentIdAttribute];
-                    if (
-                        rowParentIdAttribute !== null &&
-                        rowParentIdAttribute !== undefined
-                    ) {
-                        let isAtleastOneChildUnselected = false;
-                        let isChildRowsAvailable = false;
-                        preFilteredRows.forEach((gridRow) => {
-                            if (gridRow) {
-                                const gridRowOriginal = gridRow.original;
+            const rowParentIdAttribute = original[parentIdAttribute];
+            if (
+                rowParentIdAttribute !== null &&
+                rowParentIdAttribute !== undefined
+            ) {
+                let isAtleastOneChildUnselected = false;
+                let isChildRowsAvailable = false;
+                preFilteredRows.forEach((gridRow) => {
+                    if (gridRow) {
+                        const gridRowOriginal = gridRow.original;
+                        if (
+                            gridRowOriginal &&
+                            gridRowOriginal.isParent !== true
+                        ) {
+                            const parentIdOfChildRow =
+                                gridRowOriginal[parentIdAttribute];
+                            if (
+                                parentIdOfChildRow !== null &&
+                                parentIdOfChildRow !== undefined &&
+                                rowParentIdAttribute === parentIdOfChildRow
+                            ) {
+                                isChildRowsAvailable = true;
+                                const rowIdAttribute =
+                                    gridRowOriginal[idAttribute];
+                                let isRowSelectable = true;
                                 if (
-                                    gridRowOriginal &&
-                                    gridRowOriginal.isParent !== true
+                                    getRowInfo &&
+                                    typeof getRowInfo === "function"
                                 ) {
-                                    const parentIdOfChildRow =
-                                        gridRowOriginal[parentIdAttribute];
-                                    const rowIdAttribute =
-                                        gridRowOriginal[idAttribute];
+                                    const rowInfo = getRowInfo(gridRowOriginal);
                                     if (
-                                        parentIdOfChildRow !== null &&
-                                        parentIdOfChildRow !== undefined &&
-                                        rowParentIdAttribute ===
-                                            parentIdOfChildRow
+                                        rowInfo &&
+                                        rowInfo.isRowSelectable === false
                                     ) {
-                                        isChildRowsAvailable = true;
-                                        if (
-                                            !userSelectedRowIdentifiers.includes(
-                                                rowIdAttribute
-                                            )
-                                        ) {
-                                            isAtleastOneChildUnselected = true;
-                                        }
+                                        isRowSelectable = false;
                                     }
                                 }
+
+                                if (
+                                    isRowSelectable &&
+                                    !userSelectedRowIdentifiers.includes(
+                                        rowIdAttribute
+                                    )
+                                ) {
+                                    isAtleastOneChildUnselected = true;
+                                }
                             }
-                        });
-                        returnValue =
-                            isChildRowsAvailable &&
-                            !isAtleastOneChildUnselected;
+                        }
                     }
-                }
+                });
+                returnValue =
+                    isChildRowsAvailable && !isAtleastOneChildUnselected;
             }
         }
         return returnValue;
@@ -776,37 +789,33 @@ const Customgrid = (props) => {
         }
         if (row && parentIdAttribute && idAttribute) {
             const { original } = row;
-            if (original) {
-                const { isParent } = original;
-                if (isParent === true) {
-                    const rowParentIdAttribute = original[parentIdAttribute];
-                    if (
-                        rowParentIdAttribute !== null &&
-                        rowParentIdAttribute !== undefined
-                    ) {
-                        preFilteredRows.forEach((gridRow) => {
-                            if (gridRow) {
-                                const gridRowOriginal = gridRow.original;
+            const { isParent } = original;
+            if (isParent === true) {
+                const rowParentIdAttribute = original[parentIdAttribute];
+                if (
+                    rowParentIdAttribute !== null &&
+                    rowParentIdAttribute !== undefined
+                ) {
+                    preFilteredRows.forEach((gridRow) => {
+                        if (gridRow) {
+                            const gridRowOriginal = gridRow.original;
+                            if (
+                                gridRowOriginal &&
+                                gridRowOriginal.isParent !== true
+                            ) {
                                 if (
-                                    gridRowOriginal &&
-                                    gridRowOriginal.isParent !== true
+                                    gridRowOriginal[parentIdAttribute] ===
+                                    rowParentIdAttribute
                                 ) {
-                                    if (
-                                        gridRowOriginal[parentIdAttribute] ===
-                                        rowParentIdAttribute
-                                    ) {
-                                        const { id } = gridRow;
-                                        setIsRowSelectionCallbackNeeded(
-                                            selectionType
-                                                ? "select"
-                                                : "deselect"
-                                        );
-                                        toggleRowSelected(id, selectionType);
-                                    }
+                                    const { id } = gridRow;
+                                    setIsRowSelectionCallbackNeeded(
+                                        selectionType ? "select" : "deselect"
+                                    );
+                                    toggleRowSelected(id, selectionType);
                                 }
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             }
         }
@@ -828,6 +837,10 @@ const Customgrid = (props) => {
             }
         }
         return isLoadMoreChildNeeded;
+    };
+
+    const isLoadMoreRequiredForNormalRow = (index) => {
+        return index === rows.length - 1 && isNextPageLoading;
     };
 
     if (!isFirstRendering && gridColumns && gridColumns.length > 0) {
@@ -892,8 +905,8 @@ const Customgrid = (props) => {
                                     data-testid="toggleColumnFilter"
                                     onClick={toggleColumnFilter}
                                 >
-                                    <i>
-                                        <IconFilter />
+                                    <i className="ng-icon-block">
+                                        <IconFilter className="ng-icon ng-icon--filter" />
                                     </i>
                                 </div>
                             </div>
@@ -906,8 +919,8 @@ const Customgrid = (props) => {
                                     data-testid="toggleGroupSortOverLay"
                                     onClick={toggleGroupSortOverLay}
                                 >
-                                    <i>
-                                        <IconGroupSort />
+                                    <i className="ng-icon-block">
+                                        <IconGroupSort className="ng-icon" />
                                     </i>
                                 </div>
                                 {isGroupSortOverLayOpen ? (
@@ -930,8 +943,8 @@ const Customgrid = (props) => {
                                     data-testid="toggleManageColumnsOverlay"
                                     onClick={toggleManageColumnsOverlay}
                                 >
-                                    <i>
-                                        <IconColumns />
+                                    <i className="ng-icon-block">
+                                        <IconColumns className="ng-icon" />
                                     </i>
                                 </div>
                                 {isManageColumnOverlayOpen ? (
@@ -960,8 +973,8 @@ const Customgrid = (props) => {
                                     data-testid="toggleExportDataOverlay"
                                     onClick={toggleExportDataOverlay}
                                 >
-                                    <i>
-                                        <IconShare />
+                                    <i className="ng-icon-block">
+                                        <IconShare className="ng-icon" />
                                     </i>
                                 </div>
                                 {isExportOverlayOpen ? (
@@ -985,8 +998,8 @@ const Customgrid = (props) => {
                                     data-testid="refreshGrid"
                                     onClick={onGridRefresh}
                                 >
-                                    <i>
-                                        <IconRefresh />
+                                    <i className="ng-icon-block">
+                                        <IconRefresh className="ng-icon" />
                                     </i>
                                 </div>
                             </div>
@@ -997,7 +1010,6 @@ const Customgrid = (props) => {
                 <div
                     className="neo-grid__table"
                     style={{
-                        height: gridHeight || "50vh",
                         overflowX: "auto",
                         overflowY: "hidden"
                     }}
@@ -1069,11 +1081,18 @@ const Customgrid = (props) => {
                                                                                         {isSorted ? (
                                                                                             <i className="neo-grid__th-icon">
                                                                                                 <IconSort
-                                                                                                    className={
+                                                                                                    className={`ng-icon neo-grid__sort-desc ${
                                                                                                         isSortedDesc
-                                                                                                            ? "neo-grid__sort-asc"
-                                                                                                            : "neo-grid__sort-desc"
-                                                                                                    }
+                                                                                                            ? "is-active"
+                                                                                                            : ""
+                                                                                                    }`}
+                                                                                                />
+                                                                                                <IconSort
+                                                                                                    className={`ng-icon neo-grid__sort-asc ${
+                                                                                                        isSortedDesc
+                                                                                                            ? ""
+                                                                                                            : "is-active"
+                                                                                                    }`}
                                                                                                 />
                                                                                             </i>
                                                                                         ) : (
@@ -1201,6 +1220,12 @@ const Customgrid = (props) => {
                                                         reRenderListData={
                                                             reRenderListData
                                                         }
+                                                        fixedRowHeight={
+                                                            fixedRowHeight
+                                                        }
+                                                        isLoadMoreRequiredForNormalRow={
+                                                            isLoadMoreRequiredForNormalRow
+                                                        }
                                                     />
                                                 )}
                                             </InfiniteLoader>
@@ -1254,6 +1279,10 @@ const Customgrid = (props) => {
                                                 reRenderListData={
                                                     reRenderListData
                                                 }
+                                                fixedRowHeight={fixedRowHeight}
+                                                isLoadMoreRequiredForNormalRow={
+                                                    isLoadMoreRequiredForNormalRow
+                                                }
                                             />
                                         )}
                                     </div>
@@ -1278,7 +1307,6 @@ const Customgrid = (props) => {
 Customgrid.propTypes = {
     isDesktop: PropTypes.bool,
     title: PropTypes.string,
-    gridHeight: PropTypes.string,
     theme: PropTypes.string,
     managableColumns: PropTypes.arrayOf(PropTypes.object),
     parentColumn: PropTypes.object,
@@ -1318,7 +1346,8 @@ Customgrid.propTypes = {
     fileName: PropTypes.string,
     onGridRefresh: PropTypes.func,
     rowsToSelect: PropTypes.array,
-    rowsToDeselect: PropTypes.array
+    rowsToDeselect: PropTypes.array,
+    fixedRowHeight: PropTypes.bool
 };
 
 export default Customgrid;

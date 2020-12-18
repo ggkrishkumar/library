@@ -313,49 +313,10 @@ describe("render Index file ", () => {
         });
     }
 
-    const mockGridHeight = "80vh";
     const mockGridWidth = "100%";
     const mockTitle = "AWBs";
 
     const mockRowsToDeselect = [1, 2];
-
-    const mockCalculateRowHeight = jest.fn((row, columnsInGrid) => {
-        // Minimum height for each row
-        let rowHeight = 50;
-        if (columnsInGrid && columnsInGrid.length > 0 && row) {
-            // Get properties of a row
-            const { original, isExpanded } = row;
-            // Find the column with maximum width configured, from grid columns list
-            const columnWithMaxWidth = [...columnsInGrid].sort((a, b) => {
-                return b.width - a.width;
-            })[0];
-            // Get column properties including the user resized column width (totalFlexWidth)
-            const { id, width, totalFlexWidth } = columnWithMaxWidth;
-            // Get row value of that column
-            const rowValue = original[id];
-            if (rowValue) {
-                // Find the length of text of data in that column
-                const textLength = Object.values(rowValue).join(",").length;
-                // This is a formula that was created for the test data used.
-                rowHeight += Math.ceil((80 * textLength) / totalFlexWidth);
-                const widthVariable =
-                    totalFlexWidth > width
-                        ? totalFlexWidth - width
-                        : width - totalFlexWidth;
-                rowHeight += widthVariable / 1000;
-            }
-            // Add logic to increase row height if row is expanded
-            if (isExpanded && mockAdditionalColumn) {
-                // Increase height based on the number of inner cells in additional columns
-                rowHeight +=
-                    mockAdditionalColumn.innerCells &&
-                    mockAdditionalColumn.innerCells.length > 0
-                        ? mockAdditionalColumn.innerCells.length * 35
-                        : 35;
-            }
-        }
-        return rowHeight;
-    });
     const mockRowActions = jest.fn();
     const mockUpdateRowData = jest.fn();
     const mockSelectBulkData = jest.fn();
@@ -371,7 +332,6 @@ describe("render Index file ", () => {
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -380,7 +340,6 @@ describe("render Index file ", () => {
                 loadMoreData={mockLoadMoreData}
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
-                calculateRowHeight={mockCalculateRowHeight}
                 rowActions={mockRowActions}
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
@@ -474,7 +433,6 @@ describe("render Index file ", () => {
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -483,7 +441,6 @@ describe("render Index file ", () => {
                 loadMoreData={mockLoadMoreData}
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
-                calculateRowHeight={mockCalculateRowHeight}
                 rowActions={mockRowActions}
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}

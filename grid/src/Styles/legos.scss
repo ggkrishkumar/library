@@ -4,24 +4,27 @@
 }
 
 .neo-grid {
-    color: var(--text-light);
-    font-size: rem(12);
     .ng-error {
-        margin-top: 20px;
+        margin-top: rem(20);
         color: var(--danger);
         width: 100%;
         text-align: center;
     }
     .ng-txt {
         height: rem(32);
-        border-radius: 3px;
-        padding: 1px 0 0 4px;
+        border-radius: rem(3);
+        padding: rem(1) 0 0 rem(4);
         font-size: rem(12);
-        color: #000;
-        border: var(--border-grey) solid 1px;
+        color: var(--textcolor);
+        border: var(--border-grey) solid rem(1);
         box-sizing: border-box;
         &::placeholder {
             color: var(--placeholder);
         }
+    }
+    .ng-icon {
+        height: rem(12);
+        width: rem(12);
+        fill: var(--icon-primary);
     }
 }

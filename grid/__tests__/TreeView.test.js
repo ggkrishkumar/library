@@ -482,7 +482,13 @@ describe("render Index file ", () => {
         }
     ];
 
-    const mockGridHeight = "80vh";
+    const mockGetRowInfo = (rowData) => {
+        const { travelId } = rowData;
+        return {
+            isRowSelectable: travelId !== 0
+        };
+    };
+
     const mockGridWidth = "100%";
     const mockTitle = "AWBs";
 
@@ -504,7 +510,6 @@ describe("render Index file ", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={[]}
                 idAttribute="travelId"
@@ -530,12 +535,11 @@ describe("render Index file ", () => {
         expect(errorMessage.length).toBe(1);
     });
 
-    it("test grid with simple parent data - index pagination", () => {
+    it("test grid with simple parent data - index pagination and single row selection", () => {
         mockOffsetSize(600, 600);
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentData}
                 idAttribute="travelId"
@@ -549,6 +553,7 @@ describe("render Index file ", () => {
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
                 rowsToDeselect={mockRowsToDeselect}
+                multiRowSelection={false}
             />
         );
         const gridContainer = container;
@@ -580,7 +585,6 @@ describe("render Index file ", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentData}
                 idAttribute="travelId"
@@ -620,12 +624,11 @@ describe("render Index file ", () => {
         expect(mockLoadMoreData).toHaveBeenCalled();
     });
 
-    it("test grid with parent data and child data and parentRowExpandable as false - load more - index pagination", () => {
+    it("test grid with parent data and child data and parentRowExpandable as false - load more - index pagination for fixedRowHeight Grid", () => {
         mockOffsetSize(600, 900);
-        const { container, getAllByTestId } = render(
+        const { container, getAllByTestId, getByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentDataWithAllChildData}
                 idAttribute="travelId"
@@ -640,12 +643,38 @@ describe("render Index file ", () => {
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
                 rowsToDeselect={mockRowsToDeselect}
+                fixedRowHeight
             />
         );
         const gridContainer = container;
 
         // Check if Grid id rendered.
         expect(gridContainer).toBeInTheDocument();
+
+        // Open Group sort overlay
+        const groupSortIcon = getAllByTestId("toggleGroupSortOverLay");
+        expect(groupSortIcon.length).toBe(1);
+        act(() => {
+            groupSortIcon[0].dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Add sort option
+        const addSortLink = getByTestId("addSort");
+        act(() => {
+            addSortLink.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Apply sort options
+        const applySortButton = getByTestId("saveSort");
+        act(() => {
+            applySortButton.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
 
         // Check if expand/collapse icons are not present
         const expandCollapseIcons = document.querySelectorAll(
@@ -655,7 +684,7 @@ describe("render Index file ", () => {
 
         // Find load more buttons
         const loadMoreButttons = getAllByTestId("load-more-childdata");
-        expect(loadMoreButttons.length).toBe(2); // Actually there should be 3, but only 2 will be loaded as part of virtualization
+        expect(loadMoreButttons.length).toBe(3);
 
         // Click first parent's load more
         act(() => {
@@ -672,7 +701,6 @@ describe("render Index file ", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentDataWithAllChildData}
                 idAttribute="travelId"
@@ -702,7 +730,7 @@ describe("render Index file ", () => {
 
         // Find load more buttons
         const loadMoreButttons = getAllByTestId("load-more-childdata");
-        expect(loadMoreButttons.length).toBe(2); // Actually there should be 3, but only 2 will be loaded as part of virtualization
+        expect(loadMoreButttons.length).toBe(3);
 
         // Click first parent's load more
         act(() => {
@@ -719,7 +747,6 @@ describe("render Index file ", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentDataWithOnlyLastChildData}
                 idAttribute="travelId"
@@ -757,7 +784,6 @@ describe("render Index file ", () => {
         const { container, getByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentDataWithAllChildData}
                 idAttribute="travelId"
@@ -873,7 +899,6 @@ describe("render Index file ", () => {
         const { container, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={parentDataWithAllChildData}
                 idAttribute="travelId"
@@ -888,6 +913,7 @@ describe("render Index file ", () => {
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
                 rowsToDeselect={mockRowsToDeselect}
+                getRowInfo={mockGetRowInfo}
             />
         );
         const gridContainer = container;
@@ -903,11 +929,12 @@ describe("render Index file ", () => {
             );
         });
 
-        // Selected checkboxes count should be 6 (1 parent row + 5 child rows)
+        // Selected checkboxes count should be 5 (1 parent row + 4 child rows).
+        // Row with travel id 0 doesn't have checkbox because of rwInfo.
         let selectedCheckboxes = gridContainer.querySelectorAll(
             'input[type="checkbox"]:checked'
         );
-        expect(selectedCheckboxes.length).toBe(6);
+        expect(selectedCheckboxes.length).toBe(5);
 
         // Unelect first parent
         firstParentRowSelector = getAllByTestId("rowSelector-parentRow")[0];
@@ -939,5 +966,47 @@ describe("render Index file ", () => {
         // There should be 3 as all parent rows are now in collapsed state
         accordionIcons = getAllByTestId("acccordion-expand-collapse");
         expect(accordionIcons.length).toBe(3);
+    });
+
+    it("test grid with parent data and child data and parentRowsToExpand - parent row selection without idAttribute", () => {
+        mockOffsetSize(600, 200);
+        const { container, getAllByTestId } = render(
+            <Grid
+                title={mockTitle}
+                gridWidth={mockGridWidth}
+                gridData={parentDataWithAllChildData}
+                paginationType="index"
+                loadMoreData={mockLoadMoreData}
+                columns={gridColumns}
+                columnToExpand={mockAdditionalColumn}
+                parentColumn={parentColumn}
+                parentIdAttribute={parentIdAttribute}
+                parentRowsToExpand={[0]}
+                rowActions={mockRowActions}
+                onRowUpdate={mockUpdateRowData}
+                onRowSelect={mockSelectBulkData}
+                rowsToDeselect={mockRowsToDeselect}
+            />
+        );
+        const gridContainer = container;
+
+        // Check if Grid id rendered.
+        expect(gridContainer).toBeInTheDocument();
+
+        // Select first parent
+        const firstParentRowSelector = getAllByTestId(
+            "rowSelector-parentRow"
+        )[0];
+        act(() => {
+            firstParentRowSelector.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Selected checkboxes count should be 0
+        const selectedCheckboxes = gridContainer.querySelectorAll(
+            'input[type="checkbox"]:checked'
+        );
+        expect(selectedCheckboxes.length).toBe(0);
     });
 });

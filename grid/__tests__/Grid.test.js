@@ -19,6 +19,10 @@ describe("render Index file ", () => {
             configurable: true,
             value: width
         });
+        Object.defineProperty(window, "innerWidth", {
+            configurable: true,
+            value: width
+        });
     }
 
     const mockDisplayCell = jest.fn(() => {
@@ -150,6 +154,51 @@ describe("render Index file ", () => {
                 );
             },
             isSearchable: true
+        },
+        {
+            Header: "Segment",
+            accessor: "segment",
+            width: 50,
+            disableFilters: false,
+            display: false,
+            innerCells: [
+                {
+                    Header: "From",
+                    accessor: "from",
+                    display: false,
+                    isSortable: false,
+                    isSearchable: false
+                },
+                {
+                    Header: "To",
+                    accessor: "to",
+                    display: false,
+                    isSortable: false,
+                    isSearchable: false
+                }
+            ]
+        },
+        {
+            Header: "Null Column",
+            accessor: "null"
+        },
+        {
+            Header: "Undefined Cell",
+            accessor: "undefined",
+            innerCells: [
+                {
+                    Header: "From",
+                    accessor: "undefined"
+                },
+                {
+                    Header: "To",
+                    accessor: "undefined"
+                }
+            ],
+            sortValue: "undefined",
+            displayCell: () => {
+                return <p>Undefined column with cell</p>;
+            }
         }
     ];
 
@@ -161,6 +210,30 @@ describe("render Index file ", () => {
                 accessor: "remarks"
             }
         ],
+        displayCell: (rowData, DisplayTag) => {
+            const { remarks } = rowData;
+            return (
+                <div className="details-wrap">
+                    <DisplayTag columnKey="remarks" cellKey="remarks">
+                        <ul>
+                            <li>{remarks}</li>
+                        </ul>
+                    </DisplayTag>
+                </div>
+            );
+        }
+    };
+
+    const mockHiddenAdditionalColumn = {
+        Header: "Remarks",
+        innerCells: [
+            {
+                Header: "Remarks",
+                accessor: "remarks",
+                display: false
+            }
+        ],
+        display: false,
         displayCell: (rowData, DisplayTag) => {
             const { remarks } = rowData;
             return (
@@ -337,163 +410,19 @@ describe("render Index file ", () => {
         };
     };
 
-    const mockGridHeight = "80vh";
     const mockGridWidth = "100%";
     const mockTitle = "AWBs";
 
     const mockRowsToDeselect = [1, 2];
-
-    const mockCalculateRowHeight = jest.fn((row, columnsInGrid) => {
-        // Minimum height for each row
-        let rowHeight = 50;
-        if (columnsInGrid && columnsInGrid.length > 0 && row) {
-            // Get properties of a row
-            const { original, isExpanded } = row;
-            // Find the column with maximum width configured, from grid columns list
-            const columnWithMaxWidth = [...columnsInGrid].sort((a, b) => {
-                return b.width - a.width;
-            })[0];
-            // Get column properties including the user resized column width (totalFlexWidth)
-            const { id, width, totalFlexWidth } = columnWithMaxWidth;
-            // Get row value of that column
-            const rowValue = original[id];
-            if (rowValue) {
-                // Find the length of text of data in that column
-                const textLength = Object.values(rowValue).join(",").length;
-                // This is a formula that was created for the test data used.
-                rowHeight += Math.ceil((80 * textLength) / totalFlexWidth);
-                const widthVariable =
-                    totalFlexWidth > width
-                        ? totalFlexWidth - width
-                        : width - totalFlexWidth;
-                rowHeight += widthVariable / 1000;
-            }
-            // Add logic to increase row height if row is expanded
-            if (isExpanded && mockAdditionalColumn) {
-                // Increase height based on the number of inner cells in additional columns
-                rowHeight +=
-                    mockAdditionalColumn.innerCells &&
-                    mockAdditionalColumn.innerCells.length > 0
-                        ? mockAdditionalColumn.innerCells.length * 35
-                        : 35;
-            }
-        }
-        return rowHeight;
-    });
     const mockRowActions = jest.fn();
     const mockUpdateRowData = jest.fn();
     const mockSelectBulkData = jest.fn();
     const mockGridRefresh = jest.fn();
     const mockLoadMoreData = jest.fn();
     const mockCustomPanel = () => {
-        const SCR = () => {
-            alert("view SCR ");
-        };
-        const OpenSummary = () => {
-            alert("Open Summary");
-        };
-        const CloseSummary = () => {
-            alert("Close Summary");
-        };
-
-        const GiveFeedback = () => {
-            alert("Give FeedBack ");
-        };
-        const ViewFeedback = () => {
-            alert("View Feedback");
-        };
-
-        const buttonPanelData = [
-            {
-                label: "Send SCR",
-                value: "SCR",
-                handleEvent: SCR,
-                children: []
-            },
-            {
-                label: "Segment Summary",
-                value: "SegmentSummary",
-                children: [
-                    {
-                        label: "Open Summary",
-                        value: "OpenSummary",
-                        handleEvent: OpenSummary
-                    },
-                    {
-                        label: "Close Summary",
-                        value: "handleEvent",
-                        handleEvent: CloseSummary
-                    }
-                ]
-            },
-            {
-                label: "Feedback",
-                value: "Feedback",
-                children: [
-                    {
-                        label: "View Feedback",
-                        value: "ViewFeedback",
-                        handleEvent: ViewFeedback
-                    },
-                    {
-                        label: "Give Feedback",
-                        value: "GiveFeedback",
-                        handleEvent: GiveFeedback
-                    }
-                ]
-            }
-        ];
-
-        const isbuttonPanelDataPresent =
-            buttonPanelData && buttonPanelData.length > 0;
-
         return (
             <div className="row-options-overlay customPanel">
-                {isbuttonPanelDataPresent
-                    ? buttonPanelData.map((action) => {
-                          const { label, children, handleEvent } = action;
-                          const isChildrenPresent =
-                              children && children.length > 0;
-                          return (
-                              <div className="dropdown" key={label}>
-                                  <button
-                                      type="submit"
-                                      className="dropbtn"
-                                      onClick={handleEvent}
-                                  >
-                                      {label}
-                                  </button>
-
-                                  <div className="dropdown-content">
-                                      {isChildrenPresent
-                                          ? children.map((childAction) => {
-                                                const childlabel =
-                                                    childAction.label;
-                                                const childhandleEvent =
-                                                    childAction.handleEvent;
-                                                return (
-                                                    <div
-                                                        className="dropdown"
-                                                        key={`${childlabel}`}
-                                                    >
-                                                        <button
-                                                            type="submit"
-                                                            className="dropbtn"
-                                                            onClick={
-                                                                childhandleEvent
-                                                            }
-                                                        >
-                                                            {childlabel}
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })
-                                          : null}
-                                  </div>
-                              </div>
-                          );
-                      })
-                    : null}
+                Custom area in Grid header
             </div>
         );
     };
@@ -511,7 +440,6 @@ describe("render Index file ", () => {
                 className="icargoCustomClass"
                 theme="portal"
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -602,28 +530,65 @@ describe("render Index file ", () => {
         expect(sortOverlay).toBeNull();
 
         // Cell edit
-        const editButton = getAllByTestId("cell-edit-icon");
+        let editButton = getAllByTestId("cell-edit-icon");
         act(() => {
             editButton[0].dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
+
+        // Check if edit overlay is opened
+        let editOverlays = container.querySelectorAll(
+            "[data-testid='cell-edit-overlay']"
+        );
+        expect(editOverlays.length).toBeGreaterThan(0);
+
+        // Simply save the overlay
+        fireEvent.click(getByTestId("cell-edit-save"));
+
+        // Check if edit overlay is closed
+        editOverlays = container.querySelectorAll(
+            "[data-testid='cell-edit-overlay']"
+        );
+        expect(editOverlays.length).toBe(0);
+
+        // No call back as data has not been changed
+        expect(mockUpdateRowData).not.toHaveBeenCalled();
+
+        // Again open cell edit
+        editButton = getAllByTestId("cell-edit-icon");
+        act(() => {
+            editButton[0].dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+
+        // Check if edit overlay is opened
+        editOverlays = container.querySelectorAll(
+            "[data-testid='cell-edit-overlay']"
+        );
+        expect(editOverlays.length).toBeGreaterThan(0);
+
+        // Update flight number
         const flightNoInput = getByTestId("flightnoinput");
         expect(flightNoInput.value).toBe("XX6983");
         fireEvent.change(flightNoInput, { target: { value: "123" } });
 
+        // Save the changes
         const setState = jest.fn(() => editedRowValue);
         const useStateSpy = jest.spyOn(React, "useState");
         useStateSpy.mockImplementation(() => [editedRowValue, setState]);
         fireEvent.click(getByTestId("cell-edit-save"));
+
+        // Call back should be made as data has been changed
+        expect(mockUpdateRowData).toHaveBeenCalled();
     });
 
     it("test row options functionalities and column sort with row height calculation, custom panel and refresh button not passed", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { getAllByTestId, container, getByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -633,7 +598,6 @@ describe("render Index file ", () => {
                 columns={gridColumns}
                 columnToExpand={mockAdditionalColumn}
                 rowActions={mockRowActions}
-                calculateRowHeight={mockCalculateRowHeight}
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
             />
@@ -676,25 +640,39 @@ describe("render Index file ", () => {
         );
         expect(overlayContainer.length).toBe(0);
 
-        // Column Sort
+        // Flight column Sort
         const flightSort = getAllByTestId("column-header-sort")[2];
         act(() => {
             flightSort.dispatchEvent(
                 new MouseEvent("click", { bubbles: true })
             );
         });
+        // Id column Sort
         const idSort = getAllByTestId("column-header-sort")[1];
         act(() => {
             idSort.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         });
+        // Null column Sort
+        const nullColumnSort = getAllByTestId("column-header-sort")[6];
+        act(() => {
+            nullColumnSort.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
+        // Undefined cell Sort
+        const undefinedCellSort = getAllByTestId("column-header-sort")[7];
+        act(() => {
+            undefinedCellSort.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+            );
+        });
     });
 
     it("test grid with 2 rows to trigger the load more page function", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={smallData}
                 idAttribute="travelId"
@@ -702,7 +680,7 @@ describe("render Index file ", () => {
                 pageInfo={smallPageInfo}
                 loadMoreData={mockLoadMoreData}
                 columns={gridColumns}
-                columnToExpand={mockAdditionalColumn}
+                columnToExpand={mockHiddenAdditionalColumn}
                 rowActions={mockRowActions}
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
@@ -713,11 +691,10 @@ describe("render Index file ", () => {
     });
 
     it("test Grid loading with row selector and all header icons hidden, custom panel and refresh button shown", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 rowsToOverscan={20}
@@ -786,11 +763,10 @@ describe("render Index file ", () => {
     });
 
     it("test Grid loading without any data", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container, getByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 idAttribute="travelId"
                 paginationType="index"
@@ -819,11 +795,10 @@ describe("render Index file ", () => {
     });
 
     it("test Grid loading without columns", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container, getByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -852,11 +827,10 @@ describe("render Index file ", () => {
     });
 
     it("test row selection retained after applying group sort", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
@@ -913,8 +887,8 @@ describe("render Index file ", () => {
         expect(selectedRowCheckboxes.length).toBe(1);
     });
 
-    it("test display of row specific expand icon and class names", () => {
-        mockOffsetSize(600, 600);
+    it("test display of row specific expand icon and class names for fixedRowHeight Grid", () => {
+        mockOffsetSize(1440, 900);
         const { container, getAllByTestId } = render(
             <Grid
                 gridData={data}
@@ -927,6 +901,7 @@ describe("render Index file ", () => {
                 onRowUpdate={mockUpdateRowData}
                 onRowSelect={mockSelectBulkData}
                 getRowInfo={getRowInfo}
+                fixedRowHeight
             />
         );
         const gridContainer = container;
@@ -956,11 +931,10 @@ describe("render Index file ", () => {
     });
 
     it("test grid without passing callback function", () => {
-        mockOffsetSize(600, 600);
+        mockOffsetSize(1440, 900);
         const { container, getByTestId, getAllByTestId } = render(
             <Grid
                 title={mockTitle}
-                gridHeight={mockGridHeight}
                 gridWidth={mockGridWidth}
                 gridData={data}
                 idAttribute="travelId"
